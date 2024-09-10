@@ -1,0 +1,3 @@
+# Ignore Vagrant files
+testing-vagrant/.vagrant
+endeavouros.box
