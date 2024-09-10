@@ -34,7 +34,7 @@ Vagrant.configure("2") do |config|
     cd /home/vagrant/dev-machine
 
     # Make setup.sh executable
-    chmod +x setup.sh
+    chmod +x setup.sh config_copy.sh
 
     # Run the setup script
     ./setup.sh
