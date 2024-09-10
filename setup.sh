@@ -1,9 +1,15 @@
 #!/bin/bash
 
+# Check if script is run as root
+if [ "$(id -u)" -eq 0 ]; then
+    echo "This script should not be run as root. Please run it as a regular user."
+    exit 1
+fi
+
 LOG_FILE=~/setup.log
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-echo "Starting enhanced Hyprland setup script..." $(date)
+echo "Starting Hyprland setup script..." $(date)
 
 # Function to check last command status
 check_status() {
@@ -15,15 +21,15 @@ check_status() {
     fi
 }
 
-# Step 1: Update package database and upgrade system
-echo "Updating package database and upgrading system..."
+# Update system
+echo "Updating system..."
 sudo pacman -Syu --noconfirm
 check_status "System update"
 
-# Step 2: Install yay (AUR helper)
+# Install yay if not already installed
 if ! command -v yay &> /dev/null; then
     echo "Installing yay..."
-    sudo pacman -S --needed --noconfirm git base-devel
+    sudo pacman -S --needed git base-devel
     git clone https://aur.archlinux.org/yay.git
     cd yay
     makepkg -si --noconfirm
@@ -32,38 +38,24 @@ if ! command -v yay &> /dev/null; then
     check_status "Yay installation"
 fi
 
-# Step 3: Install packages
+# Install required packages
 echo "Installing required packages..."
-yay -S --needed --noconfirm hyprland-git wayland kitty sddm xdg-desktop-portal-hyprland xf86-video-nouveau mesa mkinitcpio wofi wlroots-git hyprutils-git hyprlang-git hyprcursor-git hyprwayland-scanner-git polkit-kde-agent xdg-desktop-portal-gtk pipewire wireplumber xdg-user-dirs
+yay -S --needed --noconfirm hyprland kitty sddm xdg-desktop-portal-hyprland xf86-video-nouveau mesa wofi polkit-kde-agent xdg-user-dirs pipewire wireplumber
 check_status "Package installation"
 
-# Step 4: Enable SDDM
+# Enable SDDM
 echo "Enabling SDDM service..."
 sudo systemctl enable sddm.service
 check_status "SDDM service enablement"
 
-# Step 5: Modify mkinitcpio.conf for Nouveau
-echo "Checking mkinitcpio.conf for nouveau..."
-if ! grep -q "MODULES=(.*nouveau.*)" /etc/mkinitcpio.conf; then
-    sudo sed -i '/^MODULES=/s/)/nouveau)/' /etc/mkinitcpio.conf
-    check_status "Adding nouveau to mkinitcpio.conf"
-else
-    echo "Nouveau already present in mkinitcpio.conf"
-fi
-
-# Step 6: Rebuild initramfs
-echo "Rebuilding initramfs..."
-sudo mkinitcpio -P
-check_status "Initramfs rebuild"
-
-# Step 7: Set up user groups and services
+# Set up user groups and services
 echo "Setting up user groups and services..."
 sudo usermod -aG video,input $(whoami)
 echo "i2c-dev" | sudo tee /etc/modules-load.d/i2c-dev.conf
 systemctl --user enable --now pipewire.service pipewire-pulse.service wireplumber.service
 check_status "User groups and services setup"
 
-# Step 8: Set up environment variables
+# Set up environment variables
 echo "Setting up environment variables..."
 cat << EOF >> ~/.bash_profile
 export XDG_CURRENT_DESKTOP=Hyprland
@@ -74,12 +66,12 @@ export GDK_BACKEND=wayland
 EOF
 check_status "Environment variables setup"
 
-# Step 9: Create necessary directories
+# Create necessary directories
 echo "Creating necessary directories..."
 mkdir -p ~/.config/{hypr,kitty,wofi}
 check_status "Directory creation"
 
-# Step 10: Set up basic Hyprland configuration
+# Set up basic Hyprland configuration
 echo "Setting up basic Hyprland configuration..."
 cat << EOF > ~/.config/hypr/hyprland.conf
 monitor=,preferred,auto,1
@@ -92,7 +84,7 @@ input {
     touchpad {
         natural_scroll = false
     }
-    sensitivity = 0 # -1.0 - 1.0, 0 means no modification.
+    sensitivity = 0
 }
 
 general {
@@ -138,10 +130,6 @@ master {
 
 gestures {
     workspace_swipe = false
-}
-
-device:epic-mouse-v1 {
-    sensitivity = -0.5
 }
 
 bind = SUPER, Return, exec, kitty
