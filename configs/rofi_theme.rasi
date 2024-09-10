@@ -1,8 +1,0 @@
-* {
-    background-color: #1a1b26;
-    border-color: #3b4252;
-    text-color: #c0caf5;
-    selected-background-color: #7aa2f7;
-    selected-text-color: #ffffff;
-    font: "Monospace 12";
-}
