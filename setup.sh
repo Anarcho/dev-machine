@@ -17,7 +17,7 @@ check_status() {
 # Step 1: Install packages
 echo "Installing required packages..."
 sudo pacman -Syu --noconfirm
-sudo pacman -S --needed --noconfirm hyprland wayland kitty sddm xdg-desktop-portal-hyprland xf86-video-nouveau mesa
+sudo pacman -S --needed --noconfirm hyprland wayland kitty sddm xdg-desktop-portal-hyprland xf86-video-nouveau mesa mkinitcpio
 check_status "Package installation"
 
 # Step 2: Enable SDDM
@@ -39,7 +39,7 @@ check_status "Configuration file copying"
 # Step 5: Modify mkinitcpio.conf for Nouveau
 echo "Checking mkinitcpio.conf for nouveau..."
 if ! grep -q "MODULES=(.*nouveau.*)" /etc/mkinitcpio.conf; then
-    sudo sed -i '/^MODULES=/s/)/ nouveau)/' /etc/mkinitcpio.conf
+    sudo sed -i '/^MODULES=/s/)/nouveau)/' /etc/mkinitcpio.conf
     check_status "Adding nouveau to mkinitcpio.conf"
 else
     echo "Nouveau already present in mkinitcpio.conf"
