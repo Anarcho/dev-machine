@@ -23,7 +23,7 @@ check_status "System update"
 # Step 2: Install yay (AUR helper)
 if ! command -v yay &> /dev/null; then
     echo "Installing yay..."
-    sudo pacman -S --needed git base-devel
+    sudo pacman -S --needed --noconfirm git base-devel
     git clone https://aur.archlinux.org/yay.git
     cd yay
     makepkg -si --noconfirm
@@ -59,17 +59,19 @@ check_status "Initramfs rebuild"
 # Step 7: Set up user groups and services
 echo "Setting up user groups and services..."
 sudo usermod -aG video,input $(whoami)
-sudo bash -c "echo i2c-dev | tee /etc/modules-load.d/i2c-dev.conf"
+echo "i2c-dev" | sudo tee /etc/modules-load.d/i2c-dev.conf
 systemctl --user enable --now pipewire.service pipewire-pulse.service wireplumber.service
 check_status "User groups and services setup"
 
 # Step 8: Set up environment variables
 echo "Setting up environment variables..."
-echo "export XDG_CURRENT_DESKTOP=Hyprland" >> ~/.bash_profile
-echo "export XDG_SESSION_TYPE=wayland" >> ~/.bash_profile
-echo "export XDG_SESSION_DESKTOP=Hyprland" >> ~/.bash_profile
-echo "export QT_QPA_PLATFORM=wayland" >> ~/.bash_profile
-echo "export GDK_BACKEND=wayland" >> ~/.bash_profile
+cat << EOF >> ~/.bash_profile
+export XDG_CURRENT_DESKTOP=Hyprland
+export XDG_SESSION_TYPE=wayland
+export XDG_SESSION_DESKTOP=Hyprland
+export QT_QPA_PLATFORM=wayland
+export GDK_BACKEND=wayland
+EOF
 check_status "Environment variables setup"
 
 # Step 9: Create necessary directories
