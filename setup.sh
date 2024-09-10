@@ -17,7 +17,7 @@ check_status() {
 # Step 1: Install packages
 echo "Installing required packages..."
 sudo pacman -Syu --noconfirm
-sudo pacman -S --needed --noconfirm hyprland wayland kitty sddm xdg-desktop-portal-hyprland xf86-video-nouveau mesa mkinitcpio
+sudo pacman -S --needed --noconfirm hyprland wayland kitty sddm xdg-desktop-portal-hyprland xf86-video-nouveau mesa mkinitcpio libwayland-client libwayland-server libwayland-egl
 check_status "Package installation"
 
 # Step 2: Enable SDDM
