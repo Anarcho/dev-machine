@@ -1,0 +1,38 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+    # Use the custom EndeavourOS box
+    config.vm.box = "endeavouros"
+  
+    # Set up VM properties
+    config.vm.provider "virtualbox" do |vb|
+      vb.memory = "8192"
+      vb.cpus = 2
+    end
+  
+    # Disable default synced folder (optional)
+    config.vm.synced_folder ".", "/vagrant", disabled: true
+  
+    # Provision the VM with a shell script
+    config.vm.provision "shell", inline: <<-SHELL
+      # Update system
+      sudo pacman -Syu --noconfirm
+  
+      # Install necessary packages
+      sudo pacman -S git base-devel --noconfirm
+  
+      # Clone the repository
+      git clone https://github.com/Anarcho/dev-machine.git /home/vagrant/dev-machine
+  
+      # Navigate to the cloned repository
+      cd /home/vagrant/dev-machine
+  
+      # Make setup.sh executable
+      chmod +x setup.sh
+  
+      # Run the setup script
+      ./setup.sh
+    SHELL
+  end
+  

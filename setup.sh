@@ -11,38 +11,43 @@ check_status() {
         echo "Success: $1"
     else
         echo "Error: $1 failed"
+        exit 1
     fi
 }
 
-# Step 1: Install packages
-echo "Installing required packages..."
+# Step 1: Update package database and upgrade system
+echo "Updating package database and upgrading system..."
 sudo pacman -Syu --noconfirm
-sudo pacman -S --needed --noconfirm hyprland wayland kitty sddm xdg-desktop-portal-hyprland xf86-video-nouveau mesa mkinitcpio libwayland-client libwayland-server libwayland-egl
+check_status "System update"
+
+# Step 2: Install packages
+echo "Installing required packages..."
+sudo pacman -S --needed --noconfirm hyprland wayland kitty sddm xdg-desktop-portal-hyprland xf86-video-nouveau mesa mkinitcpio
 check_status "Package installation"
 
-# Step 2: Enable SDDM
+# Step 3: Enable SDDM
 echo "Enabling SDDM service..."
 sudo systemctl enable sddm.service
 check_status "SDDM service enablement"
 
-# Step 3: Create necessary config directories
+# Step 4: Create necessary config directories
 echo "Creating config directories..."
 mkdir -p ~/.config/{hypr,kitty}
 check_status "Config directory creation"
 
-# Step 4: Delete existing configuration files
+# Step 5: Delete existing configuration files
 echo "Deleting existing configuration files..."
 rm -f ~/.config/hypr/hyprland.conf
 rm -f ~/.config/kitty/kitty.conf
 check_status "Configuration file deletion"
 
-# Step 5: Copy new configuration files
+# Step 6: Copy new configuration files
 echo "Copying new configuration files..."
 cp ./hyprland.conf ~/.config/hypr/
 cp ./kitty.conf ~/.config/kitty/
 check_status "Configuration file copying"
 
-# Step 6: Modify mkinitcpio.conf for Nouveau
+# Step 7: Modify mkinitcpio.conf for Nouveau
 echo "Checking mkinitcpio.conf for nouveau..."
 if ! grep -q "MODULES=(.*nouveau.*)" /etc/mkinitcpio.conf; then
     sudo sed -i '/^MODULES=/s/)/nouveau)/' /etc/mkinitcpio.conf
@@ -51,7 +56,7 @@ else
     echo "Nouveau already present in mkinitcpio.conf"
 fi
 
-# Step 7: Rebuild initramfs
+# Step 8: Rebuild initramfs
 echo "Rebuilding initramfs..."
 sudo mkinitcpio -P
 check_status "Initramfs rebuild"
