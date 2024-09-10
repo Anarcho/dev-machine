@@ -2,37 +2,51 @@
 # vi: set ft=ruby :
 
 Vagrant.configure("2") do |config|
-    # Use the custom EndeavourOS box
-    config.vm.box = "endeavouros"
-  
-    # Set up VM properties
-    config.vm.provider "virtualbox" do |vb|
-      vb.memory = "8192"
-      vb.cpus = 2
-    end
-  
-    # Disable default synced folder (optional)
-    config.vm.synced_folder ".", "/vagrant", disabled: true
-  
-    # Provision the VM with a shell script
-    config.vm.provision "shell", inline: <<-SHELL
-      # Update system
-      sudo pacman -Syu --noconfirm
-  
-      # Install necessary packages
-      sudo pacman -S git base-devel --noconfirm
-  
-      # Clone the repository
-      git clone https://github.com/Anarcho/dev-machine.git /home/vagrant/dev-machine
-  
-      # Navigate to the cloned repository
-      cd /home/vagrant/dev-machine
-  
-      # Make setup.sh executable
-      chmod +x setup.sh
-  
-      # Run the setup script
-      ./setup.sh
-    SHELL
+  # Use the custom EndeavourOS box
+  config.vm.box = "endeavouros"
+
+  # Set up VM properties
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "8192"
+    vb.cpus = 2
+    
+    # Enable 3D acceleration
+    vb.customize ["modifyvm", :id, "--accelerate3d", "on"]
+    vb.customize ["modifyvm", :id, "--graphicscontroller", "vmsvga"]
+    vb.customize ["modifyvm", :id, "--vram", "128"]
   end
-  
+
+  # Disable default synced folder (optional)
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  # Provision the VM with a shell script
+  config.vm.provision "shell", inline: <<-SHELL
+    # Update system
+    sudo pacman -Syu --noconfirm
+
+    # Install necessary packages
+    sudo pacman -S git base-devel mesa --noconfirm
+
+    # Clone the repository
+    git clone https://github.com/Anarcho/dev-machine.git /home/vagrant/dev-machine
+
+    # Navigate to the cloned repository
+    cd /home/vagrant/dev-machine
+
+    # Make setup.sh executable
+    chmod +x setup.sh
+
+    # Run the setup script
+    ./setup.sh
+
+    # Enable 3D acceleration in X11 configuration
+    echo 'Section "Device"
+    Identifier  "Card0"
+    Driver      "vmware"
+    Option      "AccelMethod"    "glamor"
+EndSection' | sudo tee /etc/X11/xorg.conf.d/20-vmware.conf
+
+    # Reboot
+    sudo reboot
+  SHELL
+end
