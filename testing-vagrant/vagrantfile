@@ -17,7 +17,7 @@ Vagrant.configure("2") do |config|
   end
 
   # Disable default synced folder (optional)
-  config.vm.synced_folder "C:/08-Repos/VagrantSyncFolder", "/home/vagrant/synced_folder", type: "virtualbox"
+  config.vm.synced_folder "C:/08-Repos/VagrantSyncFolder", "/home/vagrant", type: "virtualbox"
 
   # Provision the VM with a shell script, run as the 'vagrant' user
   config.vm.provision "shell", inline: <<-SHELL

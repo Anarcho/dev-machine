@@ -63,25 +63,25 @@ update_symlink() {
 }
 
 # Ensure configuration directories exist
-mkdir -p "$HOME/.config/hypr" "$HOME/.config/kitty" "$HOME/.config/nvim"
+# mkdir -p "$HOME/.config/hypr" "$HOME/.config/kitty" "$HOME/.config/nvim"
 
 # Update configuration symlinks
 echo -e "$CNT Updating configuration symlinks..."
 
 # Hyprland
-update_symlink "$DOTFILES_DIR/hypr/hyprland.conf" "$HOME/.config/hypr/hyprland.conf"
-
-# Kitty
-update_symlink "$DOTFILES_DIR/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
-
-# Neovim
-update_symlink "$DOTFILES_DIR/nvim/init.vim" "$HOME/.config/nvim/init.vim"
+# update_symlink "$DOTFILES_DIR/hypr/hyprland.conf" "$HOME/.config/hypr/hyprland.conf"
+# 
+# # Kitty
+# update_symlink "$DOTFILES_DIR/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
+# 
+# # Neovim
+# update_symlink "$DOTFILES_DIR/nvim/init.vim" "$HOME/.config/nvim/init.vim"
 
 # Make the Hyprland autostart script executable (if it exists)
-if [ -f "$HOME/.config/hypr/autostart.sh" ]; then
-    chmod +x "$HOME/.config/hypr/autostart.sh"
-    echo -e "$COK Made Hyprland autostart script executable."
-fi
+# if [ -f "$HOME/.config/hypr/autostart.sh" ]; then
+#     chmod +x "$HOME/.config/hypr/autostart.sh"
+#     echo -e "$COK Made Hyprland autostart script executable."
+# fi
 
 echo -e "$CNT Configuration update complete!"
 
