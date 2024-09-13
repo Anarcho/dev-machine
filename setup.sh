@@ -34,6 +34,9 @@ add_to_bashrc() {
 add_to_bashrc "DOTFILES_DIR" "$DOTFILES_DIR"
 add_to_bashrc "DOTFILES_REPO" "$DOTFILES_REPO"
 
+
+source ~/.bashrc
+
 # Let the user know they need to source .bashrc or restart terminal
 echo -e "$COK - Added variables to ~/.bashrc. Please run 'source ~/.bashrc' or restart your terminal to apply the changes."
 
@@ -222,8 +225,6 @@ else
 fi
 
 echo -e "$COK - Configuration files have been symlinked successfully."
-
-source ~/.bashrc
 
 ### Script is done ###
 echo -e "$CNT - Script has completed!"
