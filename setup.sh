@@ -115,7 +115,7 @@ install_software() {
 # NVIDIA setup (if not a VM and NVIDIA detected)
 if [[ "$ISNVIDIA" == true && "$ISVM" == false ]]; then
     echo -e "$CNT - Setting up NVIDIA..."
-    for pkg in linux-headers nvidia nvidia-utils nvidia-settings; do
+    for pkg in linux-headers nvidia-beta nvidia-utils-beta nvidia-settings-beta lib32-nvidia-utils-beta qt5-wayland qt5ct libva libva-nvidia-driver-git; do
         install_software $pkg
     done
 
