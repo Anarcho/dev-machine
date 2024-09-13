@@ -7,8 +7,34 @@ CER="[\e[1;31mERROR\e[0m]"
 CAT="[\e[1;37mATTENTION\e[0m]"
 CWR="[\e[1;35mWARNING\e[0m]"
 
-# Set the location of your dotfiles
+# Set the location for your dotfiles
 DOTFILES_DIR="$HOME/.dotfiles"
+
+# URL of your dotfiles repository
+DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
+
+# Function to check if variable is already in .bashrc
+add_to_bashrc() {
+    VAR_NAME=$1
+    VAR_VALUE=$2
+
+    # Check if the variable is already set in .bashrc
+    if grep -q "^export $VAR_NAME=" ~/.bashrc; then
+        echo -e "$CWR - $VAR_NAME is already set in ~/.bashrc. Updating its value."
+        sed -i "s|^export $VAR_NAME=.*|export $VAR_NAME=\"$VAR_VALUE\"|" ~/.bashrc
+    else
+        echo -e "$CNT - Adding $VAR_NAME to ~/.bashrc."
+        echo "export $VAR_NAME=\"$VAR_VALUE\"" >> ~/.bashrc
+    fi
+}
+
+# Add DOTFILES_DIR and DOTFILES_REPO to ~/.bashrc
+add_to_bashrc "DOTFILES_DIR" "$DOTFILES_DIR"
+add_to_bashrc "DOTFILES_REPO" "$DOTFILES_REPO"
+
+# Let the user know they need to source .bashrc or restart terminal
+echo -e "$COK - Added variables to ~/.bashrc. Please run 'source ~/.bashrc' or restart your terminal to apply the changes."
+
 
 # Update dotfiles
 echo -e "$CNT Updating dotfiles..."
@@ -36,6 +62,9 @@ update_symlink() {
     fi
 }
 
+# Ensure configuration directories exist
+mkdir -p "$HOME/.config/hypr" "$HOME/.config/kitty" "$HOME/.config/nvim"
+
 # Update configuration symlinks
 echo -e "$CNT Updating configuration symlinks..."
 
@@ -61,4 +90,6 @@ read -rp $'[\e[1;33mACTION\e[0m] - Would you like to restart Hyprland to apply c
 if [[ $restart == "Y" || $restart == "y" ]]; then
     echo -e "$CNT Restarting Hyprland..."
     hyprctl dispatch exit
+else
+    echo -e "$COK Hyprland restart skipped. Please restart it manually if necessary."
 fi

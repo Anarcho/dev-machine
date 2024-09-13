@@ -10,7 +10,7 @@ CAC="[\e[1;33mACTION\e[0m]"
 INSTLOG="install.log"
 
 # Set the location for your dotfiles
-DOTFILES_DIR="$HOME/.dotfiles"
+DOTFILES_DIR="/home/vagrant/dev-machine/.dotfiles"
 
 # URL of your dotfiles repository
 DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
