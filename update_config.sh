@@ -14,7 +14,7 @@ DOTFILES_DIR="$HOME/.dotfiles"
 DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
 
 # List of configurations to stow
-configs=("hypr Kitty waybar")
+configs=("hypr" "kitty" "waybar")
 
 # Function to check if variable is already in .bashrc
 add_to_bashrc() {
