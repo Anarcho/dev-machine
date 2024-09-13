@@ -15,6 +15,9 @@ DOTFILES_DIR="$HOME/.dotfiles"
 # URL of your dotfiles repository
 DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
 
+# List of configurations to stow
+configs=("hypr")
+
 # Function to check if variable is already in .bashrc
 add_to_bashrc() {
     VAR_NAME=$1
@@ -192,7 +195,8 @@ echo -e "$CNT - Using stow to symlink dotfiles..."
 
 cd "$DOTFILES_DIR" || { echo -e "$CER - Failed to change directory to $DOTFILES_DIR"; exit 1; }
 
-for config in hypr; do
+# Iterate over the list of configs and stow them
+for config in "${configs[@]}"; do
     echo -e "$CNT - Stowing $config..."
     stow $config && echo -e "$COK - Successfully stowed $config." || echo -e "$CER - Failed to stow $config."
 done

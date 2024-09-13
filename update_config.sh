@@ -13,6 +13,9 @@ DOTFILES_DIR="$HOME/.dotfiles"
 # URL of your dotfiles repository
 DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
 
+# List of configurations to stow
+configs=("hypr")
+
 # Function to check if variable is already in .bashrc
 add_to_bashrc() {
     VAR_NAME=$1
@@ -35,7 +38,7 @@ add_to_bashrc "DOTFILES_REPO" "$DOTFILES_REPO"
 # Let the user know they need to source .bashrc or restart terminal
 echo -e "$COK - Added variables to ~/.bashrc. Please run 'source ~/.bashrc' or restart your terminal to apply the changes."
 
-# Update dotfiles
+# Update dotfiles by pulling from the repo
 echo -e "$CNT Updating dotfiles..."
 if [ -d "$DOTFILES_DIR" ]; then
     cd "$DOTFILES_DIR" && git pull
@@ -46,42 +49,26 @@ if [ -d "$DOTFILES_DIR" ]; then
         exit 1
     fi
 else
-    echo -e "$CER Dotfiles directory not found. Please run the setup script first."
-    exit 1
+    echo -e "$CER Dotfiles directory not found. Cloning the repository..."
+    git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
+    if [ $? -eq 0 ]; then
+        echo -e "$COK Dotfiles cloned successfully."
+    else
+        echo -e "$CER Failed to clone the dotfiles repository."
+        exit 1
+    fi
 fi
 
-# Function to update symlinks
-update_symlink() {
-    local source="$1"
-    local target="$2"
+# Use Stow to manage dotfiles
+echo -e "$CNT - Using stow to refresh dotfiles..."
 
-    # Check if the target file already exists
-    if [ -L "$target" ]; then
-        echo -e "$CWR - $target is a symlink. Removing it before creating the new symlink."
-        rm -f "$target"
-    elif [ -e "$target" ]; then
-        echo -e "$CWR - $target exists but is not a symlink. Removing it."
-        rm -f "$target"
-    fi
+cd "$DOTFILES_DIR" || { echo -e "$CER - Failed to change directory to $DOTFILES_DIR"; exit 1; }
 
-    # Create the symlink
-    ln -sf "$source" "$target" && echo -e "$COK Updated symlink for $target" || echo -e "$CER Failed to update symlink for $target"
-}
-
-# Ensure configuration directories exist
-mkdir -p "$HOME/.config/hypr" #"$HOME/.config/kitty" "$HOME/.config/nvim"
-
-# Update configuration symlinks
-echo -e "$CNT Updating configuration symlinks..."
-
-# Hyprland
-update_symlink "$DOTFILES_DIR/hypr/hyprland.conf" "$HOME/.config/hypr/hyprland.conf"
-
-# Kitty
-# update_symlink "$DOTFILES_DIR/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
-
-# Neovim
-# update_symlink "$DOTFILES_DIR/nvim/init.vim" "$HOME/.config/nvim/init.vim"
+# Iterate over the list of configs and stow them
+for config in "${configs[@]}"; do
+    echo -e "$CNT - Stowing $config..."
+    stow -R "$config" && echo -e "$COK - Successfully stowed $config." || echo -e "$CER - Failed to stow $config."
+done
 
 # Make the Hyprland autostart script executable (if it exists)
 if [ -f "$HOME/.config/hypr/autostart.sh" ]; then
