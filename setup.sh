@@ -70,7 +70,7 @@ install_software() {
     else
         # no package found so installing
         echo -e "$CNT - Now installing $1 ..."
-        yay -S --noconfirm $1 &>> $INSTLOG
+        yes | yay -S --noconfirm $1 &>> $INSTLOG
         # test to make sure package installed
         if yay -Q $1 &>> /dev/null ; then
             echo -e "\e[1A\e[K$COK - $1 was installed."
@@ -85,9 +85,20 @@ install_software() {
 if [ "$ISNVIDIA" = true ]; then
     echo -e "$CNT - Nvidia setup stage, this may take a while..."
 
+    # First, remove potentially conflicting NVIDIA packages
+    echo -e "$CNT - Removing potentially conflicting NVIDIA packages..."
+    yes | sudo pacman -Rdd nvidia nvidia-utils nvidia-settings 2>/dev/null
+    yes | yay -Rdd nvidia nvidia-utils nvidia-settings 2>/dev/null
+
+    # Install NVIDIA packages
     for SOFTWR in linux-headers nvidia-beta nvidia-utils-beta nvidia-settings-beta lib32-nvidia-utils-beta qt5-wayland qt5ct libva libva-nvidia-driver-git
     do
-        install_software $SOFTWR
+        echo -e "$CNT - Installing $SOFTWR..."
+        yes | yay -S --noconfirm --answerdiff None --answerclean None --mflags "--noconfirm" $SOFTWR
+        if [ $? -ne 0 ]; then
+            echo -e "$CER - Failed to install $SOFTWR. Please check the logs and try again."
+            exit 1
+        fi
     done
 
     # Modify mkinitcpio.conf
@@ -118,33 +129,6 @@ for SOFTWR in hyprland kitty neovim # waybar jq mako swww swaylock-effects wofi 
 do
     install_software $SOFTWR 
 done
-
-# Stage 2 - more tools
-# echo -e "$CNT - Stage 2 - Installing additional tools and utilities, this may take a while..."
-# for SOFTWR in polkit-gnome python-requests pamixer pavucontrol brightnessctl bluez bluez-utils blueman network-manager-applet gvfs thunar-archive-plugin file-roller btop pacman-contrib
-# do
-#     install_software $SOFTWR
-# done
-# 
-# echo -e "$CNT - Stage 3 - Installing theme and visual related tools and utilities, this may take a while..."
-# for SOFTWR in starship ttf-jetbrains-mono-nerd noto-fonts-emoji lxappearance xfce4-settings sddm qt5-svg qt5-quickcontrols2 qt5-graphicaleffects
-# do
-#     install_software $SOFTWR
-# done
-
-# Start the bluetooth service
-# echo -e "$CNT - Starting the Bluetooth Service..."
-# sudo systemctl enable --now bluetooth.service &>> $INSTLOG
-# sleep 2
-
-# Enable the sddm login manager service
-echo -e "$CNT - Enabling the SDDM Service..."
-# sudo systemctl enable sddm &>> $INSTLOG
-sleep 2
-
-# Clean out other portals
-# echo -e "$CNT - Cleaning out conflicting xdg portals..."
-# yay -R --noconfirm xdg-desktop-portal-gnome xdg-desktop-portal-gtk &>> $INSTLOG
 
 # Clone or update dotfiles
 echo -e "$CNT - Setting up dotfiles..."
@@ -207,10 +191,3 @@ if [[ "$ISNVIDIA" == true ]]; then
     type 'reboot' at the prompt and hit Enter when ready."
     exit
 fi
-
-# read -rep $'[\e[1;33mACTION\e[0m] - Would you like to start Hyprland now? (y,n) ' HYP
-# if [[ $HYP == "Y" || $HYP == "y" ]]; then
-#     exec sudo systemctl start sddm &>> $INSTLOG
-# else
-#     exit
-# fi
