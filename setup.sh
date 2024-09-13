@@ -115,7 +115,20 @@ install_software() {
 # NVIDIA setup (if not a VM and NVIDIA detected)
 if [[ "$ISNVIDIA" == true && "$ISVM" == false ]]; then
     echo -e "$CNT - Setting up NVIDIA..."
-    for pkg in linux-headers nvidia-beta nvidia-utils-beta nvidia-settings-beta lib32-nvidia-utils-beta qt5-wayland qt5ct libva libva-nvidia-driver-git; do
+
+    # First, remove potentially conflicting NVIDIA packages
+    echo -e "$CNT - Removing potentially conflicting NVIDIA packages..."
+    yes | sudo pacman -Rd nvidia 2>/dev/null
+    yes | yay -Rd nvidia 2>/dev/null
+
+    yes | sudo pacman -Rd nvidia-utils 2>/dev/null
+    yes | yay -Rd nvidia-utils 2>/dev/null
+
+    yes | sudo pacman -Rd nvidia-settings 2>/dev/null
+    yes | yay -Rd nvidia-settings 2>/dev/null
+
+
+    for pkg in linux-headers nvidia-beta nvidia-utils-beta nvidia-settings-beta lib32-nvidia-utils-beta qt5-wayland qt5ct libva libva-nvidia-driver-git mkinitcpio; do
         install_software $pkg
     done
 
