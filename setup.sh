@@ -116,8 +116,14 @@ if [ "$ISNVIDIA" = true ] && [ "$ISVM" = false ]; then
 
     # First, remove potentially conflicting NVIDIA packages
     echo -e "$CNT - Removing potentially conflicting NVIDIA packages..."
-    yes | sudo pacman -Rdd nvidia nvidia-utils nvidia-settings 2>/dev/null
-    yes | yay -Rdd nvidia nvidia-utils nvidia-settings 2>/dev/null
+    yes | sudo pacman -Rd nvidia 2>/dev/null
+    yes | yay -Rd nvidia 2>/dev/null
+
+    yes | sudo pacman -Rd nvidia-utils 2>/dev/null
+    yes | yay -Rd nvidia-utils 2>/dev/null
+
+    yes | sudo pacman -Rd nvidia-settings 2>/dev/null
+    yes | yay -Rd nvidia-settings 2>/dev/null
 
     # Install NVIDIA packages
     for SOFTWR in linux-headers nvidia-beta nvidia-utils-beta nvidia-settings-beta lib32-nvidia-utils-beta qt5-wayland qt5ct libva libva-nvidia-driver-git
