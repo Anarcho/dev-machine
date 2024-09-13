@@ -35,7 +35,6 @@ add_to_bashrc "DOTFILES_REPO" "$DOTFILES_REPO"
 # Let the user know they need to source .bashrc or restart terminal
 echo -e "$COK - Added variables to ~/.bashrc. Please run 'source ~/.bashrc' or restart your terminal to apply the changes."
 
-
 # Update dotfiles
 echo -e "$CNT Updating dotfiles..."
 if [ -d "$DOTFILES_DIR" ]; then
@@ -55,33 +54,37 @@ fi
 update_symlink() {
     local source="$1"
     local target="$2"
-    if [ -e "$source" ]; then
-        ln -sf "$source" "$target" && echo -e "$COK Updated symlink for $target" || echo -e "$CER Failed to update symlink for $target"
-    else
-        echo -e "$CWR Source file $source not found. Skipping."
+
+    # Check if the target file already exists
+    if [ -e "$target" ]; then
+        echo -e "$CWR - $target already exists. Removing it before creating the symlink."
+        rm -f "$target"
     fi
+
+    # Create the symlink
+    ln -sf "$source" "$target" && echo -e "$COK Updated symlink for $target" || echo -e "$CER Failed to update symlink for $target"
 }
 
 # Ensure configuration directories exist
-# mkdir -p "$HOME/.config/hypr" "$HOME/.config/kitty" "$HOME/.config/nvim"
+mkdir -p "$HOME/.config/hypr" "$HOME/.config/kitty" "$HOME/.config/nvim"
 
 # Update configuration symlinks
 echo -e "$CNT Updating configuration symlinks..."
 
 # Hyprland
- update_symlink "$DOTFILES_DIR/hypr/hyprland.conf" "$HOME/.config/hypr/hyprland.conf"
-# 
-# # Kitty
-# update_symlink "$DOTFILES_DIR/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
-# 
-# # Neovim
-# update_symlink "$DOTFILES_DIR/nvim/init.vim" "$HOME/.config/nvim/init.vim"
+update_symlink "$DOTFILES_DIR/hypr/hyprland.conf" "$HOME/.config/hypr/hyprland.conf"
+
+# Kitty
+update_symlink "$DOTFILES_DIR/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
+
+# Neovim
+update_symlink "$DOTFILES_DIR/nvim/init.vim" "$HOME/.config/nvim/init.vim"
 
 # Make the Hyprland autostart script executable (if it exists)
-# if [ -f "$HOME/.config/hypr/autostart.sh" ]; then
-#     chmod +x "$HOME/.config/hypr/autostart.sh"
-#     echo -e "$COK Made Hyprland autostart script executable."
-# fi
+if [ -f "$HOME/.config/hypr/autostart.sh" ]; then
+    chmod +x "$HOME/.config/hypr/autostart.sh"
+    echo -e "$COK Made Hyprland autostart script executable."
+fi
 
 echo -e "$CNT Configuration update complete!"
 
