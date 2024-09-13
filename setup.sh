@@ -10,13 +10,13 @@ CAC="[\e[1;33mACTION\e[0m]"
 INSTLOG="install.log"
 
 # Set the location for your dotfiles
-DOTFILES_DIR="$HOME/dotfiles"
+DOTFILES_DIR="$HOME/.dotfiles"
 
 # URL of your dotfiles repository
 DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
 
 # List of configurations to stow
-configs=("hypr")
+configs=("hypr kitty waybar")
 
 # Function to check if variable is already in .bashrc
 add_to_bashrc() {
@@ -168,7 +168,7 @@ fi
 
 # Stage 1 - main components
 echo -e "$CNT - Stage 1 - Installing main components, this may take a while..."
-for SOFTWR in hyprland kitty neovim stow # waybar jq mako swww swaylock-effects wofi wlogout xdg-desktop-portal-hyprland swappy grim slurp thunar
+for SOFTWR in hyprland kitty neovim stow waybar #jq mako swww swaylock-effects wofi wlogout xdg-desktop-portal-hyprland swappy grim slurp thunar
 do
     install_software $SOFTWR 
 done
@@ -189,6 +189,20 @@ else
     echo -e "$CER - Failed to setup dotfiles. Exiting."
     exit 1
 fi
+
+# clear symlinks
+
+# Hypr
+echo -e "$CNT - Clearing Hyprland symlinks..."
+find "$HOME/.config/hypr" -maxdepth 1 -type l -delete
+
+# kitty
+echo -e "$CNT - Clearing kitty symlinks..."
+find "$HOME/.config/kitty" -maxdepth 1 -type l -delete
+
+# waybar
+echo -e "$CNT - Clearing waybar symlinks..."
+find "$HOME/.config/waybar" -maxdepth 1 -type l -delete
 
 # Use Stow to manage dotfiles
 echo -e "$CNT - Using stow to symlink dotfiles..."

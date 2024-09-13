@@ -8,13 +8,13 @@ CAT="[\e[1;37mATTENTION\e[0m]"
 CWR="[\e[1;35mWARNING\e[0m]"
 
 # Set the location for your dotfiles
-DOTFILES_DIR="$HOME/dotfiles"
+DOTFILES_DIR="$HOME/.dotfiles"
 
 # URL of your dotfiles repository
 DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
 
 # List of configurations to stow
-configs=("hypr")
+configs=("hypr Kitty waybar")
 
 # Function to check if variable is already in .bashrc
 add_to_bashrc() {
@@ -59,6 +59,21 @@ else
     fi
 fi
 
+# clear symlinks
+
+# Hypr
+echo -e "$CNT - Clearing Hyprland symlinks..."
+find "$HOME/.config/hypr" -maxdepth 1 -type l -delete
+
+# kitty
+echo -e "$CNT - Clearing kitty symlinks..."
+find "$HOME/.config/kitty" -maxdepth 1 -type l -delete
+
+# waybar
+echo -e "$CNT - Clearing waybar symlinks..."
+find "$HOME/.config/waybar" -maxdepth 1 -type l -delete
+
+
 # Use Stow to manage dotfiles
 echo -e "$CNT - Using stow to refresh dotfiles..."
 
@@ -74,6 +89,13 @@ done
 if [ -f "$HOME/.config/hypr/autostart.sh" ]; then
     chmod +x "$HOME/.config/hypr/autostart.sh"
     echo -e "$COK Made Hyprland autostart script executable."
+fi
+
+# Make way bar scripts executable
+
+if [ -f "$HOME/.config/waybar/scripts/powermenu.sh" ]; then
+    chmod +x "$HOME/.config/waybar/scripts/powermenu.sh"
+    echo -e "$COK Made waybar battery script executable."
 fi
 
 echo -e "$CNT Configuration update complete!"
