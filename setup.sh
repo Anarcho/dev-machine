@@ -188,47 +188,47 @@ else
     exit 1
 fi
 
-# Config file setup
-echo -e "$CNT - Setting up configuration files..."
-
-# Hyprland
-mkdir -p ~/.config/hypr
-if ln -sf "$DOTFILES_DIR/hypr/"* ~/.config/hypr/; then
-    echo -e "$COK - Hyprland configuration files symlinked successfully."
-else
-    echo -e "$CER - Failed to symlink Hyprland configuration files."
-fi
-
-# Kitty
-mkdir -p ~/.config/kitty
-if ln -sf "$DOTFILES_DIR/kitty/kitty.conf" ~/.config/kitty/kitty.conf; then
-    echo -e "$COK - Kitty configuration file symlinked successfully."
-else
-    echo -e "$CER - Failed to symlink Kitty configuration file."
-fi
-
-# Neovim
-mkdir -p ~/.config/nvim
-if ln -sf "$DOTFILES_DIR/nvim/init.vim" ~/.config/nvim/init.vim; then
-    echo -e "$COK - Neovim configuration file symlinked successfully."
-else
-    echo -e "$CER - Failed to symlink Neovim configuration file."
-fi
-
-# Make the autostart script executable
-if [ -f ~/.config/hypr/scripts/autostart.sh ]; then
-    chmod +x ~/.config/hypr/scripts/autostart.sh
-    echo -e "$COK - Autostart script made executable."
-else
-    echo -e "$CWR - autostart.sh not found in ~/.config/hypr/scripts"
-fi
-
-if [ -f ~/.config/hypr/scripts/kill.sh ]; then
-    chmod +x ~/.config/hypr/scripts/kill.sh
-    echo -e "$COK - kill script made executable."
-else
-    echo -e "$CWR - kill.sh not found in ~/.config/hypr/scripts"
-fi
+# # Config file setup
+# echo -e "$CNT - Setting up configuration files..."
+# 
+# # Hyprland
+# mkdir -p ~/.config/hypr
+# if ln -sf "$DOTFILES_DIR/hypr/"* ~/.config/hypr/; then
+#     echo -e "$COK - Hyprland configuration files symlinked successfully."
+# else
+#     echo -e "$CER - Failed to symlink Hyprland configuration files."
+# fi
+# 
+# # Kitty
+# mkdir -p ~/.config/kitty
+# if ln -sf "$DOTFILES_DIR/kitty/kitty.conf" ~/.config/kitty/kitty.conf; then
+#     echo -e "$COK - Kitty configuration file symlinked successfully."
+# else
+#     echo -e "$CER - Failed to symlink Kitty configuration file."
+# fi
+# 
+# # Neovim
+# mkdir -p ~/.config/nvim
+# if ln -sf "$DOTFILES_DIR/nvim/init.vim" ~/.config/nvim/init.vim; then
+#     echo -e "$COK - Neovim configuration file symlinked successfully."
+# else
+#     echo -e "$CER - Failed to symlink Neovim configuration file."
+# fi
+# 
+# # Make the autostart script executable
+# if [ -f ~/.config/hypr/scripts/autostart.sh ]; then
+#     chmod +x ~/.config/hypr/scripts/autostart.sh
+#     echo -e "$COK - Autostart script made executable."
+# else
+#     echo -e "$CWR - autostart.sh not found in ~/.config/hypr/scripts"
+# fi
+# 
+# if [ -f ~/.config/hypr/scripts/kill.sh ]; then
+#     chmod +x ~/.config/hypr/scripts/kill.sh
+#     echo -e "$COK - kill script made executable."
+# else
+#     echo -e "$CWR - kill.sh not found in ~/.config/hypr/scripts"
+# fi
 
 echo -e "$COK - Configuration files have been symlinked successfully."
 

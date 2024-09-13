@@ -17,29 +17,30 @@ Vagrant.configure("2") do |config|
   end
 
   # Disable default synced folder (optional)
-  config.vm.synced_folder ".", "/vagrant", disabled: true
+  config.vm.synced_folder "C:/08-Repos/VagrantSyncFolder", "/home/vagrant/synced_folder", type: "virtualbox"
 
-  # Provision the VM with a shell script
+  # Provision the VM with a shell script, run as the 'vagrant' user
   config.vm.provision "shell", inline: <<-SHELL
     # Update system
     sudo pacman -Syu --noconfirm
 
     # Install necessary packages
-    sudo pacman -S git base-devel mesa --noconfirm
+    # sudo pacman -S git base-devel mesa --noconfirm
 
-    # Clone the repository
-    git clone https://github.com/Anarcho/dev-machine.git /home/vagrant/dev-machine
+    # Run the following commands as the 'vagrant' user
+    sudo -u vagrant bash <<EOF
+      # Clone the repository
+      git clone https://github.com/Anarcho/dev-machine.git /home/vagrant/dev-machine
 
-    # Navigate to the cloned repository
-    cd /home/vagrant/dev-machine
+      # Navigate to the cloned repository
+      cd /home/vagrant/dev-machine
 
-    # Make setup.sh executable
-    chmod +x setup.sh update_config.sh
+      # Make setup.sh and update_config.sh executable
+      chmod +x setup.sh update_config.sh
 
-    # Run the setup script
-    ./setup.sh
-
-    ./update_config.sh
+      # Run the setup and config update scripts
+      ./setup.sh
+    EOF
 
     # Enable 3D acceleration in X11 configuration
     echo 'Section "Device"
@@ -48,7 +49,7 @@ Vagrant.configure("2") do |config|
     Option      "AccelMethod"    "glamor"
 EndSection' | sudo tee /etc/X11/xorg.conf.d/20-vmware.conf
 
-    # Reboot
+    # Reboot the system to apply changes
     sudo reboot
   SHELL
 end
