@@ -10,8 +10,11 @@ CWR="[\e[1;35mWARNING\e[0m]"
 DEFAULT_DOTFILES_DIR="$HOME/.dotfiles"
 DEFAULT_DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
 
+# Log file for installation
+LOG_FILE="$HOME/install.log"
+
 # List of packages to install
-required_sofware=("hyprland" "kitty" "waybar" "neovim" "stow")
+required_software=("hyprland" "kitty" "waybar" "neovim" "stow")
 
 # List of configs to stow
 configs=("hypr" "kitty" "waybar")
@@ -57,9 +60,6 @@ check_env_var() {
 check_env_var "DOTFILES_DIR" "$DEFAULT_DOTFILES_DIR"
 check_env_var "DOTFILES_REPO" "$DEFAULT_DOTFILES_REPO"
 
-# Source .bashrc to make sure environment variables are loaded
-source ~/.bashrc
-
 # Clear the screen
 clear
 
@@ -83,13 +83,12 @@ else
 fi
 
 # Ensure yay is installed
-ISYAY=/sbin/yay
-if [ ! -f "$ISYAY" ]; then
+if ! command -v yay &> /dev/null; then
     echo -e "$CWR - Yay is not installed."
     read -rp $'[\e[1;33mACTION\e[0m] - Would you like to install yay? (y/n) ' INSTYAY
     if [[ $INSTYAY =~ [Yy] ]]; then
-        git clone https://aur.archlinux.org/yay.git &>> install.log
-        cd yay && makepkg -si --noconfirm &>> ../install.log && cd ..
+        git clone https://aur.archlinux.org/yay.git &>> "$LOG_FILE"
+        cd yay && makepkg -si --noconfirm &>> ../"$LOG_FILE" && cd ..
         echo -e "$COK - Yay installed."
     else
         echo -e "$CER - Yay is required. Exiting."
@@ -103,7 +102,7 @@ install_software() {
         echo -e "$COK - $1 is already installed."
     else
         echo -e "$CNT - Installing $1 ..."
-        yes | yay -S --noconfirm $1 &>> install.log
+        yes | yay -S --noconfirm $1 &>> "$LOG_FILE"
         if yay -Q $1 &>/dev/null; then
             echo -e "$COK - $1 was installed successfully."
         else
@@ -123,7 +122,7 @@ if [[ "$ISNVIDIA" == true && "$ISVM" == false ]]; then
     # Update mkinitcpio.conf
     sudo sed -i 's/MODULES=()/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
     sudo mkinitcpio -P
-    echo -e "options nvidia-drm modeset=1" | sudo tee -a /etc/modprobe.d/nvidia.conf &>> install.log
+    echo -e "options nvidia-drm modeset=1" | sudo tee -a /etc/modprobe.d/nvidia.conf &>> "$LOG_FILE"
     sudo grub-mkconfig -o /boot/grub/grub.cfg
 
     # Set environment variables for NVIDIA and Wayland
@@ -155,7 +154,7 @@ else
     exit 1
 fi
 
-# Install packages from the post-NVIDIA package list
+# Install required software after NVIDIA setup
 echo -e "$CNT - Installing additional packages..."
 for pkg in "${required_software[@]}"; do
     install_software $pkg
