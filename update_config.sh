@@ -56,8 +56,11 @@ update_symlink() {
     local target="$2"
 
     # Check if the target file already exists
-    if [ -e "$target" ]; then
-        echo -e "$CWR - $target already exists. Removing it before creating the symlink."
+    if [ -L "$target" ]; then
+        echo -e "$CWR - $target is a symlink. Removing it before creating the new symlink."
+        rm -f "$target"
+    elif [ -e "$target" ]; then
+        echo -e "$CWR - $target exists but is not a symlink. Removing it."
         rm -f "$target"
     fi
 
@@ -66,7 +69,7 @@ update_symlink() {
 }
 
 # Ensure configuration directories exist
-mkdir -p "$HOME/.config/hypr" "$HOME/.config/kitty" "$HOME/.config/nvim"
+mkdir -p "$HOME/.config/hypr" #"$HOME/.config/kitty" "$HOME/.config/nvim"
 
 # Update configuration symlinks
 echo -e "$CNT Updating configuration symlinks..."
@@ -75,10 +78,10 @@ echo -e "$CNT Updating configuration symlinks..."
 update_symlink "$DOTFILES_DIR/hypr/hyprland.conf" "$HOME/.config/hypr/hyprland.conf"
 
 # Kitty
-#update_symlink "$DOTFILES_DIR/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
+# update_symlink "$DOTFILES_DIR/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
 
 # Neovim
-#update_symlink "$DOTFILES_DIR/nvim/init.vim" "$HOME/.config/nvim/init.vim"
+# update_symlink "$DOTFILES_DIR/nvim/init.vim" "$HOME/.config/nvim/init.vim"
 
 # Make the Hyprland autostart script executable (if it exists)
 if [ -f "$HOME/.config/hypr/autostart.sh" ]; then
