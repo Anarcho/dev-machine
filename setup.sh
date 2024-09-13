@@ -15,6 +15,28 @@ DOTFILES_DIR="$HOME/.dotfiles"
 # URL of your dotfiles repository
 DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
 
+# Function to check if variable is already in .bashrc
+add_to_bashrc() {
+    VAR_NAME=$1
+    VAR_VALUE=$2
+
+    # Check if the variable is already set in .bashrc
+    if grep -q "^export $VAR_NAME=" ~/.bashrc; then
+        echo -e "$CWR - $VAR_NAME is already set in ~/.bashrc. Updating its value."
+        sed -i "s|^export $VAR_NAME=.*|export $VAR_NAME=\"$VAR_VALUE\"|" ~/.bashrc
+    else
+        echo -e "$CNT - Adding $VAR_NAME to ~/.bashrc."
+        echo "export $VAR_NAME=\"$VAR_VALUE\"" >> ~/.bashrc
+    fi
+}
+
+# Add DOTFILES_DIR and DOTFILES_REPO to ~/.bashrc
+add_to_bashrc "DOTFILES_DIR" "$DOTFILES_DIR"
+add_to_bashrc "DOTFILES_REPO" "$DOTFILES_REPO"
+
+# Let the user know they need to source .bashrc or restart terminal
+echo -e "$COK - Added variables to ~/.bashrc. Please run 'source ~/.bashrc' or restart your terminal to apply the changes."
+
 # clear the screen
 clear
 
@@ -32,9 +54,12 @@ echo -e "$CNT - Checking for Physical or VM..."
 ISVM=$(hostnamectl | grep Chassis)
 echo -e "Using $ISVM"
 if [[ $ISVM == *"vm"* ]]; then
+    ISVM=true
     echo -e "$CWR - Please note that VMs are not fully supported and if you try to run this on
     a Virtual Machine there is a high chance this will fail."
     sleep 1
+else
+    ISVM=false
 fi
 
 # let the user know that we will use sudo
@@ -82,7 +107,8 @@ install_software() {
     fi
 }
 
-if [ "$ISNVIDIA" = true ]; then
+# Run NVIDIA setup only if not in a VM and NVIDIA GPU is detected
+if [ "$ISNVIDIA" = true ] && [ "$ISVM" = false ]; then
     echo -e "$CNT - Nvidia setup stage, this may take a while..."
 
     # First, remove potentially conflicting NVIDIA packages
@@ -121,6 +147,12 @@ WLR_RENDERER=vulkan
 XCURSOR_SIZE=24
 EOF
 
+else
+    if [ "$ISVM" = true ]; then
+        echo -e "$CNT - Running in a VM, skipping NVIDIA setup."
+    else
+        echo -e "$CNT - No NVIDIA GPU detected, skipping NVIDIA setup."
+    fi
 fi
 
 # Stage 1 - main components
@@ -175,19 +207,28 @@ else
 fi
 
 # Make the autostart script executable
-if [ -f ~/.config/hypr/autostart.sh ]; then
-    chmod +x ~/.config/hypr/autostart.sh
+if [ -f ~/.config/hypr/scripts/autostart.sh ]; then
+    chmod +x ~/.config/hypr/scripts/autostart.sh
     echo -e "$COK - Autostart script made executable."
 else
-    echo -e "$CWR - autostart.sh not found in ~/.config/hypr/"
+    echo -e "$CWR - autostart.sh not found in ~/.config/hypr/scripts"
+fi
+
+if [ -f ~/.config/hypr/scripts/kill.sh ]; then
+    chmod +x ~/.config/hypr/scripts/kill.sh
+    echo -e "$COK - kill script made executable."
+else
+    echo -e "$CWR - kill.sh not found in ~/.config/hypr/scripts"
 fi
 
 echo -e "$COK - Configuration files have been symlinked successfully."
 
+source ~/.bashrc
+
 ### Script is done ###
-echo -e "$CNT - Script had completed!"
+echo -e "$CNT - Script has completed!"
 if [[ "$ISNVIDIA" == true ]]; then 
-    echo -e "$CAT - Since we attempted to setup Nvidia the script will now end and you should reboot.
-    type 'reboot' at the prompt and hit Enter when ready."
+    echo -e "$CAT - Since we attempted to set up Nvidia, the script will now end and you should reboot.
+    Type 'reboot' at the prompt and hit Enter when ready."
     exit
 fi
