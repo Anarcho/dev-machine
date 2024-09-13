@@ -9,6 +9,12 @@ CWR="[\e[1;35mWARNING\e[0m]"
 CAC="[\e[1;33mACTION\e[0m]"
 INSTLOG="install.log"
 
+# Set the location for your dotfiles
+DOTFILES_DIR="$HOME/.dotfiles"
+
+# URL of your dotfiles repository
+DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
+
 # clear the screen
 clear
 
@@ -108,7 +114,7 @@ fi
 
 # Stage 1 - main components
 echo -e "$CNT - Stage 1 - Installing main components, this may take a while..."
-for SOFTWR in hyprland kitty # waybar jq mako swww swaylock-effects wofi wlogout xdg-desktop-portal-hyprland swappy grim slurp thunar
+for SOFTWR in hyprland kitty neovim # waybar jq mako swww swaylock-effects wofi wlogout xdg-desktop-portal-hyprland swappy grim slurp thunar
 do
     install_software $SOFTWR 
 done
@@ -140,33 +146,59 @@ sleep 2
 # echo -e "$CNT - Cleaning out conflicting xdg portals..."
 # yay -R --noconfirm xdg-desktop-portal-gnome xdg-desktop-portal-gtk &>> $INSTLOG
 
-# New section for copying and linking configuration files
+# Clone or update dotfiles
+echo -e "$CNT - Setting up dotfiles..."
+if [ -d "$DOTFILES_DIR" ]; then
+    echo -e "$CNT - Dotfiles directory already exists. Updating..."
+    cd "$DOTFILES_DIR" && git pull
+else
+    echo -e "$CNT - Cloning dotfiles repository..."
+    git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
+fi
+
+if [ $? -eq 0 ]; then
+    echo -e "$COK - Dotfiles setup successful."
+else
+    echo -e "$CER - Failed to setup dotfiles. Exiting."
+    exit 1
+fi
+
+# Config file setup
 echo -e "$CNT - Setting up configuration files..."
 
 # Hyprland
 mkdir -p ~/.config/hypr
-cp "$PWD/dotfiles/hypr/"* ~/.config/hypr/
+if ln -sf "$DOTFILES_DIR/hypr/"* ~/.config/hypr/; then
+    echo -e "$COK - Hyprland configuration files symlinked successfully."
+else
+    echo -e "$CER - Failed to symlink Hyprland configuration files."
+fi
 
+# Kitty
+mkdir -p ~/.config/kitty
+if ln -sf "$DOTFILES_DIR/kitty/kitty.conf" ~/.config/kitty/kitty.conf; then
+    echo -e "$COK - Kitty configuration file symlinked successfully."
+else
+    echo -e "$CER - Failed to symlink Kitty configuration file."
+fi
 
-
-ln -sf ~/.config/HyprV/kitty/kitty.conf ~/.config/kitty/kitty.conf
-# ln -sf ~/.config/HyprV/mako/conf/config-dark ~/.config/mako/config
-# ln -sf ~/.config/HyprV/swaylock/config ~/.config/swaylock/config
-# ln -sf ~/.config/HyprV/waybar/conf/v3-config.jsonc ~/.config/waybar/config.jsonc
-# ln -sf ~/.config/HyprV/waybar/style/v3-style-dark.css ~/.config/waybar/style.css
-# ln -sf ~/.config/HyprV/wlogout/layout ~/.config/wlogout/layout
-# ln -sf ~/.config/HyprV/wofi/config ~/.config/wofi/config
-# ln -sf ~/.config/HyprV/wofi/style/v3-style-dark.css ~/.config/wofi/style.css
+# Neovim
+mkdir -p ~/.config/nvim
+if ln -sf "$DOTFILES_DIR/nvim/init.vim" ~/.config/nvim/init.vim; then
+    echo -e "$COK - Neovim configuration file symlinked successfully."
+else
+    echo -e "$CER - Failed to symlink Neovim configuration file."
+fi
 
 # Make the autostart script executable
-chmod +x ~/.config/hypr/autostart.sh
-
-# Check if the operations were successful
-if [ $? -eq 0 ]; then
-    echo -e "$COK - Configuration files have been set up successfully."
+if [ -f ~/.config/hypr/autostart.sh ]; then
+    chmod +x ~/.config/hypr/autostart.sh
+    echo -e "$COK - Autostart script made executable."
 else
-    echo -e "$CER - There was an error setting up the configuration files. Please check the paths and try again."
+    echo -e "$CWR - autostart.sh not found in ~/.config/hypr/"
 fi
+
+echo -e "$COK - Configuration files have been symlinked successfully."
 
 ### Script is done ###
 echo -e "$CNT - Script had completed!"

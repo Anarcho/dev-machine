@@ -1,1 +1,0 @@
-echo -e "$CNT - Test hyprland conf run"
