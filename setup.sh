@@ -165,7 +165,7 @@ fi
 
 # Stage 1 - main components
 echo -e "$CNT - Stage 1 - Installing main components, this may take a while..."
-for SOFTWR in hyprland kitty neovim # waybar jq mako swww swaylock-effects wofi wlogout xdg-desktop-portal-hyprland swappy grim slurp thunar
+for SOFTWR in hyprland kitty neovim stow # waybar jq mako swww swaylock-effects wofi wlogout xdg-desktop-portal-hyprland swappy grim slurp thunar
 do
     install_software $SOFTWR 
 done
@@ -187,53 +187,15 @@ else
     exit 1
 fi
 
-# Config file setup
-echo -e "$CNT - Setting up configuration files..."
+# Use Stow to manage dotfiles
+echo -e "$CNT - Using stow to symlink dotfiles..."
 
-# Hyprland
-mkdir -p ~/.config/hypr
-echo -e "$CNT - Removing existing Hyprland configuration files..."
-rm -rf ~/.config/hypr/*
-if ln -sf "$DOTFILES_DIR/hypr/"* ~/.config/hypr/; then
-    echo -e "$COK - Hyprland configuration files symlinked successfully."
-else
-    echo -e "$CER - Failed to symlink Hyprland configuration files."
-fi
+cd "$DOTFILES_DIR" || { echo -e "$CER - Failed to change directory to $DOTFILES_DIR"; exit 1; }
 
-# # Kitty
-# mkdir -p ~/.config/kitty
-# echo -e "$CNT - Removing existing Kitty configuration files..."
-# rm -rf ~/.config/kitty/*
-# if ln -sf "$DOTFILES_DIR/kitty/kitty.conf" ~/.config/kitty/kitty.conf; then
-#     echo -e "$COK - Kitty configuration file symlinked successfully."
-# else
-#     echo -e "$CER - Failed to symlink Kitty configuration file."
-# fi
-# 
-# # Neovim
-# mkdir -p ~/.config/nvim
-# echo -e "$CNT - Removing existing Neovim configuration files..."
-# rm -rf ~/.config/nvim/*
-# if ln -sf "$DOTFILES_DIR/nvim/init.vim" ~/.config/nvim/init.vim; then
-#     echo -e "$COK - Neovim configuration file symlinked successfully."
-# else
-#     echo -e "$CER - Failed to symlink Neovim configuration file."
-# fi
-
-## Make the autostart script executable
-#if [ -f ~/.config/hypr/scripts/autostart.sh ]; then
-#    chmod +x ~/.config/hypr/scripts/autostart.sh
-#    echo -e "$COK - Autostart script made executable."
-#else
-#    echo -e "$CWR - autostart.sh not found in ~/.config/hypr/scripts"
-#fi
-#
-#if [ -f ~/.config/hypr/scripts/kill.sh ]; then
-#    chmod +x ~/.config/hypr/scripts/kill.sh
-#    echo -e "$COK - Kill script made executable."
-#else
-#    echo -e "$CWR - kill.sh not found in ~/.config/hypr/scripts"
-#fi
+for config in hypr; do
+    echo -e "$CNT - Stowing $config..."
+    stow $config && echo -e "$COK - Successfully stowed $config." || echo -e "$CER - Failed to stow $config."
+done
 
 echo -e "$COK - Configuration files have been symlinked successfully."
 
