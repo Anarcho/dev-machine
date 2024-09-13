@@ -38,25 +38,21 @@ add_to_bashrc "DOTFILES_REPO" "$DOTFILES_REPO"
 # Let the user know they need to source .bashrc or restart terminal
 echo -e "$COK - Added variables to ~/.bashrc. Please run 'source ~/.bashrc' or restart your terminal to apply the changes."
 
-# Update dotfiles by pulling from the repo
-echo -e "$CNT Updating dotfiles..."
-if [ -d "$DOTFILES_DIR" ]; then
-    cd "$DOTFILES_DIR" && git pull
-    if [ $? -eq 0 ]; then
-        echo -e "$COK Dotfiles updated successfully."
-    else
-        echo -e "$CER Failed to update dotfiles. Please check your internet connection or repository status."
-        exit 1
-    fi
+## Clone or update dotfiles
+echo -e "$CNT - Setting up dotfiles..."
+if [ -d "~/.dotfiles" ]; then
+    echo -e "$CNT - Dotfiles directory already exists. Updating..."
+    cd "~/.dotfiles" && git pull
 else
-    echo -e "$CER Dotfiles directory not found. Cloning the repository..."
-    git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
-    if [ $? -eq 0 ]; then
-        echo -e "$COK Dotfiles cloned successfully."
-    else
-        echo -e "$CER Failed to clone the dotfiles repository."
-        exit 1
-    fi
+    echo -e "$CNT - Cloning dotfiles repository..."
+    git clone "https://github.com/anarcho/dotfiles.git" "~/.dotfiles"
+fi
+
+if [ $? -eq 0 ]; then
+    echo -e "$COK - Dotfiles setup successful."
+else
+    echo -e "$CER - Failed to setup dotfiles. Exiting."
+    exit 1
 fi
 
 # clear symlinks
@@ -77,7 +73,7 @@ find "$HOME/.config/waybar" -maxdepth 1 -type l -delete
 # Use Stow to manage dotfiles
 echo -e "$CNT - Using stow to refresh dotfiles..."
 
-cd "$DOTFILES_DIR" || { echo -e "$CER - Failed to change directory to $DOTFILES_DIR"; exit 1; }
+cd "~/.dotfiles" || { echo -e "$CER - Failed to change directory to ~/.dotfiles"; exit 1; }
 
 # Iterate over the list of configs and stow them
 for config in "${configs[@]}"; do

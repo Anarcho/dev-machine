@@ -18,26 +18,26 @@ DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
 # List of configurations to stow
 configs=("hypr kitty waybar")
 
-# Function to check if variable is already in .bashrc
-add_to_bashrc() {
-    VAR_NAME=$1
-    VAR_VALUE=$2
-
-    # Check if the variable is already set in .bashrc
-    if grep -q "^export $VAR_NAME=" ~/.bashrc; then
-        echo -e "$CWR - $VAR_NAME is already set in ~/.bashrc. Updating its value."
-        sed -i "s|^export $VAR_NAME=.*|export $VAR_NAME=\"$VAR_VALUE\"|" ~/.bashrc
-    else
-        echo -e "$CNT - Adding $VAR_NAME to ~/.bashrc."
-        echo "export $VAR_NAME=\"$VAR_VALUE\"" >> ~/.bashrc
-    fi
-}
-
-# Add DOTFILES_DIR and DOTFILES_REPO to ~/.bashrc
-add_to_bashrc "DOTFILES_DIR" "$DOTFILES_DIR"
-add_to_bashrc "DOTFILES_REPO" "$DOTFILES_REPO"
-
-source ~/.bashrc
+# # Function to check if variable is already in .bashrc
+# add_to_bashrc() {
+#     VAR_NAME=$1
+#     VAR_VALUE=$2
+# 
+#     # Check if the variable is already set in .bashrc
+#     if grep -q "^export $VAR_NAME=" ~/.bashrc; then
+#         echo -e "$CWR - $VAR_NAME is already set in ~/.bashrc. Updating its value."
+#         sed -i "s|^export $VAR_NAME=.*|export $VAR_NAME=\"$VAR_VALUE\"|" ~/.bashrc
+#     else
+#         echo -e "$CNT - Adding $VAR_NAME to ~/.bashrc."
+#         echo "export $VAR_NAME=\"$VAR_VALUE\"" >> ~/.bashrc
+#     fi
+# }
+# 
+# # Add DOTFILES_DIR and DOTFILES_REPO to ~/.bashrc
+# add_to_bashrc "DOTFILES_DIR" "$DOTFILES_DIR"
+# add_to_bashrc "DOTFILES_REPO" "$DOTFILES_REPO"
+# 
+# source ~/.bashrc
 
 # Let the user know they need to source .bashrc or restart terminal
 echo -e "$COK - Added variables to ~/.bashrc. Please run 'source ~/.bashrc' or restart your terminal to apply the changes."
@@ -175,12 +175,12 @@ done
 
 # Clone or update dotfiles
 echo -e "$CNT - Setting up dotfiles..."
-if [ -d "$DOTFILES_DIR" ]; then
+if [ -d "~/.dotfiles" ]; then
     echo -e "$CNT - Dotfiles directory already exists. Updating..."
-    cd "$DOTFILES_DIR" && git pull
+    cd "~/.dotfiles" && git pull
 else
     echo -e "$CNT - Cloning dotfiles repository..."
-    git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
+    git clone "https://github.com/anarcho/dotfiles.git" "~/.dotfiles"
 fi
 
 if [ $? -eq 0 ]; then
