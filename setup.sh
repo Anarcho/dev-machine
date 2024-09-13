@@ -10,6 +10,12 @@ CWR="[\e[1;35mWARNING\e[0m]"
 DEFAULT_DOTFILES_DIR="$HOME/.dotfiles"
 DEFAULT_DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
 
+# List of packages to install
+required_sofware=("hyprland" "kitty" "waybar" "neovim" "stow")
+
+# List of configs to stow
+configs=("hypr" "kitty" "waybar")
+
 # Function to check and fix environment variables
 check_env_var() {
     local var_name=$1
@@ -149,8 +155,11 @@ else
     exit 1
 fi
 
-# List of configs to stow
-configs=("hypr" "kitty" "waybar")
+# Install packages from the post-NVIDIA package list
+echo -e "$CNT - Installing additional packages..."
+for pkg in "${required_software[@]}"; do
+    install_software $pkg
+done
 
 # Clearing old symlinks
 clear_symlinks() {
