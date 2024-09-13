@@ -69,7 +69,7 @@ update_symlink() {
 echo -e "$CNT Updating configuration symlinks..."
 
 # Hyprland
-# update_symlink "$DOTFILES_DIR/hypr/hyprland.conf" "$HOME/.config/hypr/hyprland.conf"
+ update_symlink "$DOTFILES_DIR/hypr/hyprland.conf" "$HOME/.config/hypr/hyprland.conf"
 # 
 # # Kitty
 # update_symlink "$DOTFILES_DIR/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"

@@ -191,13 +191,13 @@ fi
 # # Config file setup
 # echo -e "$CNT - Setting up configuration files..."
 # 
-# # Hyprland
-# mkdir -p ~/.config/hypr
-# if ln -sf "$DOTFILES_DIR/hypr/"* ~/.config/hypr/; then
-#     echo -e "$COK - Hyprland configuration files symlinked successfully."
-# else
-#     echo -e "$CER - Failed to symlink Hyprland configuration files."
-# fi
+# Hyprland
+mkdir -p ~/.config/hypr
+if ln -sf "$DOTFILES_DIR/hypr/"* ~/.config/hypr/; then
+    echo -e "$COK - Hyprland configuration files symlinked successfully."
+else
+    echo -e "$CER - Failed to symlink Hyprland configuration files."
+fi
 # 
 # # Kitty
 # mkdir -p ~/.config/kitty
