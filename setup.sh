@@ -110,7 +110,7 @@ install_software() {
 # NVIDIA setup (if not a VM and NVIDIA detected)
 if [[ "$ISNVIDIA" == true && "$ISVM" == false ]]; then
     echo -e "$CNT - Setting up NVIDIA..."
-    for pkg in linux-headers nvidia nvidia-utils nvidia-settings mkinitcpio; do
+    for pkg in linux-headers nvidia nvidia-utils nvidia-settings; do
         install_software $pkg
     done
 
