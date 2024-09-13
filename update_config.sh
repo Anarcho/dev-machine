@@ -75,10 +75,10 @@ echo -e "$CNT Updating configuration symlinks..."
 update_symlink "$DOTFILES_DIR/hypr/hyprland.conf" "$HOME/.config/hypr/hyprland.conf"
 
 # Kitty
-update_symlink "$DOTFILES_DIR/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
+#update_symlink "$DOTFILES_DIR/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
 
 # Neovim
-update_symlink "$DOTFILES_DIR/nvim/init.vim" "$HOME/.config/nvim/init.vim"
+#update_symlink "$DOTFILES_DIR/nvim/init.vim" "$HOME/.config/nvim/init.vim"
 
 # Make the Hyprland autostart script executable (if it exists)
 if [ -f "$HOME/.config/hypr/autostart.sh" ]; then
