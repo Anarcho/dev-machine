@@ -14,7 +14,7 @@ DEFAULT_DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
 LOG_FILE="$HOME/install.log"
 
 # List of packages to install
-required_software=("hyprland" "kitty" "waybar" "neovim" "stow")
+required_software=("wayland" "xorg-xwayland" "qt5-wayland" "qt6-wayland" "wl-clipboard" "grim" "slurp" "hyprland" "kitty" "waybar" "neovim" "stow")
 
 # List of configs to stow
 configs=("hypr" "kitty" "waybar")
