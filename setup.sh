@@ -114,31 +114,41 @@ install_software() {
 
 # NVIDIA setup (if not a VM and NVIDIA detected)
 if [[ "$ISNVIDIA" == true && "$ISVM" == false ]]; then
-    echo -e "$CNT - Setting up NVIDIA..."
+    echo -e "$CNT - Setting up NVIDIA using nvidia-all..."
 
-    # First, remove potentially conflicting NVIDIA packages
+    # Remove potentially conflicting NVIDIA packages
     echo -e "$CNT - Removing potentially conflicting NVIDIA packages..."
-    yes | sudo pacman -Rd nvidia 2>/dev/null
-    yes | yay -Rd nvidia 2>/dev/null
+    #yes | sudo pacman -Rdd nvidia nvidia-utils nvidia-settings 2>/dev/null
 
-    yes | sudo pacman -Rd nvidia-utils 2>/dev/null
-    yes | yay -Rd nvidia-utils 2>/dev/null
+    # Clone nvidia-all repository
+    echo -e "$CNT - Cloning nvidia-all repository..."
+    git clone https://github.com/Frogging-Family/nvidia-all.git &>> "$LOG_FILE"
+    cd nvidia-all || { echo -e "$CER - Failed to change to nvidia-all directory. Exiting."; exit 1; }
 
-    yes | sudo pacman -Rd nvidia-settings 2>/dev/null
-    yes | yay -Rd nvidia-settings 2>/dev/null
+    # Install nvidia-all
+    echo -e "$CNT - Installing nvidia-all..."
+    makepkg -si --noconfirm &>> "$LOG_FILE"
 
+    if [ $? -eq 0 ]; then
+        echo -e "$COK - nvidia-all installed successfully."
+    else
+        echo -e "$CER - Failed to install nvidia-all. Check install.log."
+        exit 1
+    fi
 
-    for pkg in linux-headers nvidia-beta nvidia-utils-beta nvidia-settings-beta lib32-nvidia-utils-beta qt5-wayland qt5ct libva libva-nvidia-driver-git mkinitcpio; do
-        install_software $pkg
-    done
+    cd ..
 
-    # Update mkinitcpio.conf
-    sudo sed -i 's/MODULES=()/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
-    sudo mkinitcpio -P
-    echo -e "options nvidia-drm modeset=1" | sudo tee -a /etc/modprobe.d/nvidia.conf &>> "$LOG_FILE"
-    sudo grub-mkconfig -o /boot/grub/grub.cfg
+    # Add NVIDIA modprobe configuration
+    echo -e "$CNT - Adding NVIDIA modprobe configuration..."
+    echo "options nvidia_drm modeset=1 fbdev=1" | sudo tee /etc/modprobe.d/nvidia.conf > /dev/null
+    if [ $? -eq 0 ]; then
+        echo -e "$COK - NVIDIA modprobe configuration added successfully."
+    else
+        echo -e "$CER - Failed to add NVIDIA modprobe configuration."
+    fi
 
     # Set environment variables for NVIDIA and Wayland
+    echo -e "$CNT - Setting NVIDIA and Wayland environment variables..."
     sudo tee -a /etc/environment << EOF
 LIBVA_DRIVER_NAME=nvidia
 XDG_SESSION_TYPE=wayland
@@ -146,9 +156,15 @@ GBM_BACKEND=nvidia-drm
 __GLX_VENDOR_LIBRARY_NAME=nvidia
 WLR_RENDERER=vulkan
 EOF
+    if [ $? -eq 0 ]; then
+        echo -e "$COK - Environment variables set successfully."
+    else
+        echo -e "$CER - Failed to set environment variables."
+    fi
 else
     echo -e "$CNT - Skipping NVIDIA setup."
 fi
+
 
 # Clone or update dotfiles
 echo -e "$CNT - Setting up dotfiles..."
@@ -196,3 +212,13 @@ for config in "${configs[@]}"; do
 done
 
 echo -e "$COK - Configuration files have been symlinked successfully."
+
+echo -e "$CNT - Cleaning up: Removing nvidia-all repository..."
+rm -rf "$HOME/nvidia-all"
+if [ $? -eq 0 ]; then
+    echo -e "$COK - nvidia-all repository removed successfully."
+else
+    echo -e "$CWR - Failed to remove nvidia-all repository. You may want to remove it manually from $HOME/nvidia-all"
+fi
+
+echo -e "$COK - Setup completed successfully."
