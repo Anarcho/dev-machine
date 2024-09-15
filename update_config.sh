@@ -14,10 +14,10 @@ DEFAULT_DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
 LOG_FILE="$HOME/install.log"
 
 # List of packages to install via pacman
-pacman_packages=("wayland" "xorg-xwayland" "qt5-wayland" "qt6-wayland" "wl-clipboard" "grim" "slurp" "neovim" "stow")
+pacman_packages=("wlroots" "xorg-xwayland" "polkit-kde-agent" "qt5-wayland" "qt6-wayland" "grim" "slurp" "waybar" "swaylock" "brightnessctl" "kitty" "papirus-icon-theme" "noto-fonts-emoji" "neovim" "stow")
 
 # List of packages to install via yay (AUR packages)
-yay_packages=("hyprland" "kitty" "waybar")
+yay_packages=("hyprland")
 
 # List of configs to stow
 configs=("hypr" "kitty" "waybar")
