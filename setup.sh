@@ -13,8 +13,11 @@ DEFAULT_DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
 # Log file for installation
 LOG_FILE="$HOME/install.log"
 
-# List of packages to install
-required_software=("wayland" "xorg-xwayland" "qt5-wayland" "qt6-wayland" "wl-clipboard" "grim" "slurp" "hyprland" "kitty" "waybar" "neovim" "stow")
+# List of packages to install via pacman
+pacman_packages=("wlroots" "xorg-xwayland" "polkit-kde-agent" "qt5-wayland" "qt6-wayland" "grim" "slurp" "waybar" "swaylock" "brightnessctl" "kitty" "papirus-icon-theme" "noto-fonts-emoji" "neovim" "stow")
+
+# List of packages to install via yay (AUR packages)
+yay_packages=("hyprland")
 
 # List of configs to stow
 configs=("hypr" "kitty" "waybar")
@@ -74,8 +77,8 @@ else
 fi
 
 echo -e "$CNT - Checking if system is a VM..."
-ISVM=$(hostnamectl | grep Chassis | grep -o 'vm')
-if [[ $ISVM == "vm" ]]; then
+ISVM=$(systemd-detect-virt)
+if [[ $ISVM != "none" ]]; then
     echo -e "$CWR - Running in a VM."
     ISVM=true
 else
@@ -91,19 +94,35 @@ if ! command -v yay &> /dev/null; then
         cd yay && makepkg -si --noconfirm &>> ../"$LOG_FILE" && cd ..
         echo -e "$COK - Yay installed."
     else
-        echo -e "$CER - Yay is required. Exiting."
+        echo -e "$CER - Yay is required for some packages. Exiting."
         exit 1
     fi
 fi
 
-# Function to install software
-install_software() {
-    if yay -Q $1 &>/dev/null; then
+# Function to install software using pacman
+install_pacman_package() {
+    if pacman -Qi $1 &>/dev/null; then
         echo -e "$COK - $1 is already installed."
     else
-        echo -e "$CNT - Installing $1 ..."
-        yes | yay -S --noconfirm $1 &>> "$LOG_FILE"
-        if yay -Q $1 &>/dev/null; then
+        echo -e "$CNT - Installing $1 using pacman..."
+        sudo pacman -S --noconfirm $1 &>> "$LOG_FILE"
+        if pacman -Qi $1 &>/dev/null; then
+            echo -e "$COK - $1 was installed successfully."
+        else
+            echo -e "$CER - Failed to install $1. Check install.log."
+            exit 1
+        fi
+    fi
+}
+
+# Function to install software using yay
+install_yay_package() {
+    if yay -Qi $1 &>/dev/null; then
+        echo -e "$COK - $1 is already installed."
+    else
+        echo -e "$CNT - Installing $1 using yay..."
+        yay -S --noconfirm $1 &>> "$LOG_FILE"
+        if yay -Qi $1 &>/dev/null; then
             echo -e "$COK - $1 was installed successfully."
         else
             echo -e "$CER - Failed to install $1. Check install.log."
@@ -118,21 +137,22 @@ if [[ "$ISNVIDIA" == true && "$ISVM" == false ]]; then
 
     # Remove potentially conflicting NVIDIA packages
     echo -e "$CNT - Removing potentially conflicting NVIDIA packages..."
-    #yes | sudo pacman -Rdd nvidia nvidia-utils nvidia-settings 2>/dev/null
+    yes | sudo pacman -Rdd nvidia nvidia-utils nvidia-settings 2>/dev/null
 
     # Clone nvidia-all repository
     echo -e "$CNT - Cloning nvidia-all repository..."
-    git clone https://github.com/Frogging-Family/nvidia-all.git &>> "$LOG_FILE"
+    git clone https://github.com/Frogging-Family/nvidia-all.git $HOME/nvidia-all &>> "$LOG_FILE"
     cd nvidia-all || { echo -e "$CER - Failed to change to nvidia-all directory. Exiting."; exit 1; }
 
     # Install nvidia-all
     echo -e "$CNT - Installing nvidia-all..."
-    makepkg -si --noconfirm &>> "$LOG_FILE"
+    echo -e "$CWR - You will now see prompts from the nvidia-all installer. Please respond to them as needed."
+    makepkg -si
 
     if [ $? -eq 0 ]; then
         echo -e "$COK - nvidia-all installed successfully."
     else
-        echo -e "$CER - Failed to install nvidia-all. Check install.log."
+        echo -e "$CER - Failed to install nvidia-all. Please check the output above for any errors."
         exit 1
     fi
 
@@ -165,7 +185,6 @@ else
     echo -e "$CNT - Skipping NVIDIA setup."
 fi
 
-
 # Clone or update dotfiles
 echo -e "$CNT - Setting up dotfiles..."
 if [ -d "$DOTFILES_DIR" ]; then
@@ -183,10 +202,15 @@ else
     exit 1
 fi
 
-# Install required software after NVIDIA setup
-echo -e "$CNT - Installing additional packages..."
-for pkg in "${required_software[@]}"; do
-    install_software $pkg
+# Install required software
+echo -e "$CNT - Installing packages using pacman..."
+for pkg in "${pacman_packages[@]}"; do
+    install_pacman_package $pkg
+done
+
+echo -e "$CNT - Installing packages using yay..."
+for pkg in "${yay_packages[@]}"; do
+    install_yay_package $pkg
 done
 
 # Clearing old symlinks
@@ -213,6 +237,7 @@ done
 
 echo -e "$COK - Configuration files have been symlinked successfully."
 
+# Remove the Frogging Family nvidia-all repository
 echo -e "$CNT - Cleaning up: Removing nvidia-all repository..."
 rm -rf "$HOME/nvidia-all"
 if [ $? -eq 0 ]; then

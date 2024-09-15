@@ -10,16 +10,7 @@ CWR="[\e[1;35mWARNING\e[0m]"
 DEFAULT_DOTFILES_DIR="$HOME/.dotfiles"
 DEFAULT_DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
 
-# Log file for installation
-LOG_FILE="$HOME/install.log"
-
-# List of packages to install via pacman
-pacman_packages=("wlroots" "xorg-xwayland" "polkit-kde-agent" "qt5-wayland" "qt6-wayland" "grim" "slurp" "waybar" "swaylock" "brightnessctl" "kitty" "papirus-icon-theme" "noto-fonts-emoji" "neovim" "stow")
-
-# List of packages to install via yay (AUR packages)
-yay_packages=("hyprland")
-
-# List of configs to stow
+# List of configurations to stow
 configs=("hypr" "kitty" "waybar")
 
 # Function to check and fix environment variables
@@ -66,133 +57,14 @@ check_env_var "DOTFILES_REPO" "$DEFAULT_DOTFILES_REPO"
 # Clear the screen
 clear
 
-# NVIDIA check and VM check
-echo -e "$CNT - Checking for NVIDIA GPU..."
-if lspci | grep -i nvidia &>/dev/null; then
-    ISNVIDIA=true
-    echo -e "$CNT - NVIDIA GPU detected."
-else
-    ISNVIDIA=false
-    echo -e "$CNT - NVIDIA GPU not detected."
-fi
-
-echo -e "$CNT - Checking if system is a VM..."
-ISVM=$(hostnamectl | grep Chassis | grep -o 'vm')
-if [[ $ISVM == "vm" ]]; then
-    echo -e "$CWR - Running in a VM."
-    ISVM=true
-else
-    ISVM=false
-fi
-
-# Ensure yay is installed
-if ! command -v yay &> /dev/null; then
-    echo -e "$CWR - Yay is not installed."
-    read -rp $'[\e[1;33mACTION\e[0m] - Would you like to install yay? (y/n) ' INSTYAY
-    if [[ $INSTYAY =~ [Yy] ]]; then
-        git clone https://aur.archlinux.org/yay.git &>> "$LOG_FILE"
-        cd yay && makepkg -si --noconfirm &>> ../"$LOG_FILE" && cd ..
-        echo -e "$COK - Yay installed."
-    else
-        echo -e "$CER - Yay is required for some packages. Exiting."
-        exit 1
-    fi
-fi
-
-# Function to install software using pacman
-install_pacman_package() {
-    if pacman -Qi $1 &>/dev/null; then
-        echo -e "$COK - $1 is already installed."
-    else
-        echo -e "$CNT - Installing $1 using pacman..."
-        sudo pacman -S --noconfirm $1 &>> "$LOG_FILE"
-        if pacman -Qi $1 &>/dev/null; then
-            echo -e "$COK - $1 was installed successfully."
-        else
-            echo -e "$CER - Failed to install $1. Check install.log."
-            exit 1
-        fi
-    fi
-}
-
-# Function to install software using yay
-install_yay_package() {
-    if yay -Qi $1 &>/dev/null; then
-        echo -e "$COK - $1 is already installed."
-    else
-        echo -e "$CNT - Installing $1 using yay..."
-        yay -S --noconfirm $1 &>> "$LOG_FILE"
-        if yay -Qi $1 &>/dev/null; then
-            echo -e "$COK - $1 was installed successfully."
-        else
-            echo -e "$CER - Failed to install $1. Check install.log."
-            exit 1
-        fi
-    fi
-}
-
-# NVIDIA setup (if not a VM and NVIDIA detected)
-iif [[ "$ISNVIDIA" == true && "$ISVM" == false ]]; then
-    echo -e "$CNT - Setting up NVIDIA using nvidia-all..."
-
-    # Remove potentially conflicting NVIDIA packages
-    echo -e "$CNT - Removing potentially conflicting NVIDIA packages..."
-    yes | sudo pacman -Rdd nvidia nvidia-utils nvidia-settings 2>/dev/null
-
-    # Clone nvidia-all repository
-    echo -e "$CNT - Cloning nvidia-all repository..."
-    git clone https://github.com/Frogging-Family/nvidia-all.git &>> "$LOG_FILE"
-    cd nvidia-all || { echo -e "$CER - Failed to change to nvidia-all directory. Exiting."; exit 1; }
-
-    # Install nvidia-all
-    echo -e "$CNT - Installing nvidia-all..."
-    echo -e "$CWR - You will now see prompts from the nvidia-all installer. Please respond to them as needed."
-    makepkg -si
-
-    if [ $? -eq 0 ]; then
-        echo -e "$COK - nvidia-all installed successfully."
-    else
-        echo -e "$CER - Failed to install nvidia-all. Please check the output above for any errors."
-        exit 1
-    fi
-
-    cd ..
-
-    # Add NVIDIA modprobe configuration
-    echo -e "$CNT - Adding NVIDIA modprobe configuration..."
-    echo "options nvidia_drm modeset=1 fbdev=1" | sudo tee /etc/modprobe.d/nvidia.conf > /dev/null
-    if [ $? -eq 0 ]; then
-        echo -e "$COK - NVIDIA modprobe configuration added successfully."
-    else
-        echo -e "$CER - Failed to add NVIDIA modprobe configuration."
-    fi
-
-    # Set environment variables for NVIDIA and Wayland
-    echo -e "$CNT - Setting NVIDIA and Wayland environment variables..."
-    sudo tee -a /etc/environment << EOF
-LIBVA_DRIVER_NAME=nvidia
-XDG_SESSION_TYPE=wayland
-GBM_BACKEND=nvidia-drm
-__GLX_VENDOR_LIBRARY_NAME=nvidia
-WLR_RENDERER=vulkan
-EOF
-    if [ $? -eq 0 ]; then
-        echo -e "$COK - Environment variables set successfully."
-    else
-        echo -e "$CER - Failed to set environment variables."
-    fi
-else
-    echo -e "$CNT - Skipping NVIDIA setup."
-fi
-
-# Clone or update dotfiles
+## Clone or update dotfiles
 echo -e "$CNT - Setting up dotfiles..."
 if [ -d "$DOTFILES_DIR" ]; then
-    echo -e "$CNT - Dotfiles directory exists. Pulling updates..."
-    cd "$DOTFILES_DIR" && git pull
+    echo -e "$CNT - Dotfiles directory already exists. Updating..."
+    cd "$DOTFILES_DIR" && git pull || { echo -e "$CER - Failed to update dotfiles. Check your network connection."; exit 1; }
 else
     echo -e "$CNT - Cloning dotfiles repository..."
-    git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
+    git clone "$DOTFILES_REPO" "$DOTFILES_DIR" || { echo -e "$CER - Failed to clone dotfiles. Check the repository URL or your network connection."; exit 1; }
 fi
 
 if [ $? -eq 0 ]; then
@@ -202,48 +74,50 @@ else
     exit 1
 fi
 
-# Install required software
-echo -e "$CNT - Installing packages using pacman..."
-for pkg in "${pacman_packages[@]}"; do
-    install_pacman_package $pkg
-done
+# Clear symlinks
 
-echo -e "$CNT - Installing packages using yay..."
-for pkg in "${yay_packages[@]}"; do
-    install_yay_package $pkg
-done
+# Hypr
+echo -e "$CNT - Clearing Hyprland symlinks..."
+find "$HOME/.config/hypr" -maxdepth 1 -type l -delete
 
-# Clearing old symlinks
-clear_symlinks() {
-    local dir=$1
-    if [ -d "$dir" ]; then
-        echo -e "$CNT - Clearing symlinks in $dir..."
-        find "$dir" -maxdepth 1 -type l -delete
-    else
-        echo -e "$CWR - Directory $dir not found. Skipping."
-    fi
-}
-clear_symlinks "$HOME/.config/hypr"
-clear_symlinks "$HOME/.config/kitty"
-clear_symlinks "$HOME/.config/waybar"
+# Kitty
+echo -e "$CNT - Clearing Kitty symlinks..."
+find "$HOME/.config/kitty" -maxdepth 1 -type l -delete
 
-# Use stow to symlink the dotfiles
-echo -e "$CNT - Using stow to symlink dotfiles..."
-cd "$DOTFILES_DIR" || { echo -e "$CER - Failed to change to $DOTFILES_DIR. Exiting."; exit 1; }
+# Waybar
+echo -e "$CNT - Clearing Waybar symlinks..."
+find "$HOME/.config/waybar" -maxdepth 1 -type l -delete
 
+# Use Stow to manage dotfiles
+echo -e "$CNT - Using stow to refresh dotfiles..."
+
+cd "$DOTFILES_DIR" || { echo -e "$CER - Failed to change directory to $DOTFILES_DIR"; exit 1; }
+
+# Iterate over the list of configs and stow them
 for config in "${configs[@]}"; do
+    echo -e "$CNT - Stowing $config..."
     stow -R "$config" && echo -e "$COK - Successfully stowed $config." || echo -e "$CER - Failed to stow $config."
 done
 
-echo -e "$COK - Configuration files have been symlinked successfully."
-
-# Remove the Frogging Family nvidia-all repository
-echo -e "$CNT - Cleaning up: Removing nvidia-all repository..."
-rm -rf "$HOME/nvidia-all"
-if [ $? -eq 0 ]; then
-    echo -e "$COK - nvidia-all repository removed successfully."
-else
-    echo -e "$CWR - Failed to remove nvidia-all repository. You may want to remove it manually from $HOME/nvidia-all"
+# Make the Hyprland autostart script executable (if it exists)
+if [ -f "$HOME/.config/hypr/autostart.sh" ]; then
+    chmod +x "$HOME/.config/hypr/autostart.sh"
+    echo -e "$COK - Made Hyprland autostart script executable."
 fi
 
-echo -e "$COK - Setup completed successfully."
+# Make Waybar scripts executable
+if [ -f "$HOME/.config/waybar/scripts/powermenu.sh" ]; then
+    chmod +x "$HOME/.config/waybar/scripts/powermenu.sh"
+    echo -e "$COK - Made Waybar powermenu script executable."
+fi
+
+echo -e "$CNT - Configuration update complete!"
+
+# Prompt to restart Hyprland
+read -rp $'[\e[1;33mACTION\e[0m] - Would you like to restart Hyprland to apply changes? (y/n) ' restart
+if [[ $restart == "Y" || $restart == "y" ]]; then
+    echo -e "$CNT - Restarting Hyprland..."
+    hyprctl dispatch exit
+else
+    echo -e "$COK - Hyprland restart skipped. Please restart it manually if necessary."
+fi
