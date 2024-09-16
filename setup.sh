@@ -56,7 +56,7 @@ create_backup() {
 
 # Check and install dependencies
 check_dependencies() {
-    local deps=("git" "stow" "curl")
+    local deps=("git" "stow" "curl" "mkinitcpio" "linux" "linux-headers" "base-devel")
     for dep in "${deps[@]}"; do
         if ! command -v $dep &> /dev/null; then
             log_message "$CWR $dep is not installed. Installing..."
@@ -79,22 +79,60 @@ source_config() {
 }
 
 # Nvidia Driver Install function
+# Nvidia Driver Install function
 nvidia_install() {
     log_message "$CNT Starting Nvidia Driver Installation..."
     
+    log_message "$CNT Setting up NVIDIA using nvidia-all..."
+
+    # Remove potentially conflicting NVIDIA packages
+    log_message "$CNT Removing potentially conflicting NVIDIA packages..."
+    yes | sudo pacman -Rdd nvidia nvidia-utils nvidia-settings 2>/dev/null
+
     # Clone nvidia-all repository
-    git clone https://github.com/Frogging-Family/nvidia-all.git $HOME/setup-repos/nvidia-all
-    handle_error $? "Failed to clone nvidia-all repository"
-    
+    log_message "$CNT Cloning nvidia-all repository..."
+    git clone https://github.com/Frogging-Family/nvidia-all.git $HOME/setup-repos/nvidia-all &>> "$LOG_FILE"
+    cd $HOME/setup-repos/nvidia-all || { log_message "$CER Failed to change to nvidia-all directory. Exiting."; exit 1; }
+
     # Install nvidia-all
-    cd $HOME/setup-repos/nvidia-all
-    makepkg -si --noconfirm
-    handle_error $? "Failed to install nvidia-all"
-    
-    # Remove cloned repository
+    log_message "$CNT Installing nvidia-all..."
+    log_message "$CWR You will now see prompts from the nvidia-all installer. Please respond to them as needed."
+    makepkg -si
+    if [ $? -eq 0 ]; then
+        log_message "$COK nvidia-all installed successfully."
+    else
+        log_message "$CER Failed to install nvidia-all. Please check the output above for any errors."
+        exit 1
+    fi
     cd $HOME
+
+    # Add NVIDIA modprobe configuration
+    log_message "$CNT Adding NVIDIA modprobe configuration..."
+    echo "options nvidia_drm modeset=1 fbdev=1" | sudo tee /etc/modprobe.d/nvidia.conf > /dev/null
+    if [ $? -eq 0 ]; then
+        log_message "$COK NVIDIA modprobe configuration added successfully."
+    else
+        log_message "$CER Failed to add NVIDIA modprobe configuration."
+    fi
+
+    # Set environment variables for NVIDIA and Wayland
+    log_message "$CNT Setting NVIDIA and Wayland environment variables..."
+    sudo tee -a /etc/environment << EOF
+LIBVA_DRIVER_NAME=nvidia
+XDG_SESSION_TYPE=wayland
+GBM_BACKEND=nvidia-drm
+__GLX_VENDOR_LIBRARY_NAME=nvidia
+WLR_RENDERER=vulkan
+EOF
+    if [ $? -eq 0 ]; then
+        log_message "$COK Environment variables set successfully."
+    else
+        log_message "$CER Failed to set environment variables."
+    fi
+
+    # Remove cloned repository
     rm -rf $HOME/setup-repos/nvidia-all
-    
+
     log_message "$COK Nvidia Driver Installation completed."
 }
 
