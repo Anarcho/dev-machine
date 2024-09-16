@@ -304,7 +304,8 @@ main_menu() {
     echo "4. Setup Dotfiles"
     echo "5. Run Additional Scripts"
     echo "6. Reset and Reinstall Configs"
-    echo "7. Exit"
+    echo "7. Fix Setup"
+    echo "8. Exit"
     
     read -rp "Enter your choice [1-7]: " choice
     
@@ -315,7 +316,8 @@ main_menu() {
         4) setup_dotfiles ;;
         5) run_additional_scripts ;;
         6) reset_and_reinstall_configs ;;
-        7) exit 0 ;;
+        7) fix_setup ;;
+        8) exit 0 ;;
         *) echo -e "$CER Invalid choice. Please try again."; main_menu ;;
     esac
 
