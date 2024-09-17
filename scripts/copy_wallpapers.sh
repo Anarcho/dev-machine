@@ -28,7 +28,7 @@ fi
 dotfiles_wallpaper_dir="$DOTFILES_DIR/wallpapers"
 if [ -d "$dotfiles_wallpaper_dir" ]; then
     echo -e "$CNT Copying wallpapers from $dotfiles_wallpaper_dir to $wallpaper_dir"
-    cp "$dotfiles_wallpaper_dir"/*.jpg "$wallpaper_dir" 2>/dev/null
+    find "$dotfiles_wallpaper_dir" -maxdepth 1 -type f -name "*.jpg" -exec cp {} "$wallpaper_dir" \;
     if [ $? -eq 0 ]; then
         echo -e "$COK Wallpapers copied successfully."
     else
