@@ -226,6 +226,45 @@ run_scripts() {
 
     echo -e "$COK - Finished running additional scripts."
 }
+
+reset_and_reinstall_configs() {
+    echo -e "$CNT Starting Reset and Reinstall Configs process..."
+
+    # Backup existing directories
+    local backup_timestamp=$(date +%Y%m%d_%H%M%S)
+    
+    if [ -d "$HOME/.dotfiles" ]; then
+        echo -e "$CNT Backing up .dotfiles directory..."
+        mv "$HOME/.dotfiles" "$HOME/.dotfiles_backup_$backup_timestamp"
+        echo -e "$COK .dotfiles directory backed up."
+    fi
+
+    if [ -d "$HOME/.wallpapers" ]; then
+        echo -e "$CNT Backing up .wallpapers directory..."
+        mv "$HOME/.wallpapers" "$HOME/.wallpapers_backup_$backup_timestamp"
+        echo -e "$COK .wallpapers directory backed up."
+    fi
+
+    # Remove existing directories
+    echo -e "$CNT Removing existing .dotfiles and .wallpapers directories..."
+    rm -rf "$HOME/.dotfiles" "$HOME/.wallpapers"
+    echo -e "$COK Directories removed."
+
+    # Clone dotfiles repository
+    echo -e "$CNT Cloning dotfiles repository..."
+    git clone "$DOTFILES_REPO" "$HOME/.dotfiles"
+    if [ $? -ne 0 ]; then
+        echo -e "$CER Failed to clone dotfiles repository. Exiting."
+        exit 1
+    fi
+    echo -e "$COK Dotfiles repository cloned successfully."
+
+    # Run setup_dotfiles function
+    echo -e "$CNT Running setup_dotfiles function..."
+    setup_dotfiles
+    echo -e "$COK Config reset and reinstall process completed."
+}
+
 fix_setup() {
     echo -e "$CNT - Starting Fix Setup..."
     
@@ -250,24 +289,24 @@ fix_setup() {
 
 # Main menu function
 main_menu() {
-    echo -e "\nPlease select a stage to run:"
-    echo "1. All (Base Install + Additional Packages + Dotfiles)"
+    echo -e "\nPlease select an option:"
+    echo "1. Run All (Base Install + Additional Packages + Dotfiles + Scripts)"
     echo "2. Base Install (Nvidia + Core Packages)"
-    echo "3. Additional Packages Install"
-    echo "4. Dotfiles Setup"
-    echo "5. Run Scripts"
-    echo "6. Fix Setup"
+    echo "3. Install Additional Packages"
+    echo "4. Setup Dotfiles"
+    echo "5. Run Additional Scripts"
+    echo "6. Reset and Reinstall Configs"
     echo "7. Exit"
     
     read -rp "Enter your choice [1-7]: " choice
     
     case $choice in
-        1) base_install && install_additional_packages && setup_dotfiles && run_scripts ;;
+        1) base_install && install_additional_packages && setup_dotfiles && run_additional_scripts ;;
         2) base_install ;;
         3) install_additional_packages ;;
         4) setup_dotfiles ;;
-        5) run_scripts ;;
-        6) fix_setup ;;
+        5) run_additional_scripts ;;
+        6) reset_and_reinstall_configs ;;
         7) exit 0 ;;
         *) echo -e "$CER Invalid choice. Please try again."; main_menu ;;
     esac
