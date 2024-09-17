@@ -196,7 +196,7 @@ setup_dotfiles() {
 
     # Clone nvim config repo and stow it
     echo -e "$CNT - Cloning nvim config repository..."
-    git clone https://github.com/Anarcho/kickstart.nvim.git "$HOME/.config/nvim"
+    git clone https://github.com/Anarcho/kickstart.nvim.git "$HOME/.dotfiles/nvim"
     if [ $? -eq 0 ]; then
         echo -e "$COK - nvim config repository cloned successfully."
         echo -e "$CNT - Stowing nvim config..."
