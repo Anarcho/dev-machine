@@ -14,13 +14,25 @@ DEFAULT_DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
 LOG_FILE="$HOME/install.log"
 
 # List of packages to install via pacman
-pacman_packages=("wlroots" "xorg-xwayland" "polkit-kde-agent" "qt5-wayland" "qt6-wayland" "grim" "slurp" "waybar" "swaylock" "brightnessctl" "kitty" "papirus-icon-theme" "noto-fonts-emoji" "neovim" "stow")
+pacman_packages=("wlroots" "xorg-xwayland" "polkit-kde-agent" "mkinitcpio" "qt5-wayland" "qt6-wayland" "grim" "slurp" "waybar" "swaylock" "brightnessctl" "hyprpaper" "kitty" "papirus-icon-theme" "noto-fonts-emoji" "neovim" "stow")
 
 # List of packages to install via yay (AUR packages)
 yay_packages=("hyprland")
 
 # List of configs to stow
 configs=("hypr" "kitty" "waybar")
+
+# Function to prompt for stage
+display_stage_prompt() {
+    local stage_name="$1"
+    echo -e "\n$CNT Stage: $stage_name"
+    read -rp $'[\e[1;33mACTION\e[0m] - Do you want to proceed with this stage? (y/n) ' choice
+    case "$choice" in 
+        y|Y ) return 0;;
+        n|N ) echo -e "$CWR Exiting script."; exit 1;;
+        * ) echo -e "$CER Invalid choice. Exiting script."; exit 1;;
+    esac
+}
 
 # Function to check and fix environment variables
 check_env_var() {
@@ -57,16 +69,25 @@ check_env_var() {
             fi
         fi
     fi
-}
 
-# Check and fix environment variables for DOTFILES_DIR and DOTFILES_REPO
-check_env_var "DOTFILES_DIR" "$DEFAULT_DOTFILES_DIR"
-check_env_var "DOTFILES_REPO" "$DEFAULT_DOTFILES_REPO"
+    # Final check and fallback
+    var_value=${!var_name}
+    if [ -z "$var_value" ]; then
+        echo -e "$CER - Failed to set $var_name. Using hardcoded value."
+        if [[ "$var_name" == "DOTFILES_DIR" ]]; then
+            export "$var_name"="$HOME/.dotfiles"
+        elif [[ "$var_name" == "DOTFILES_REPO" ]]; then
+            export "$var_name"="https://github.com/anarcho/dotfiles.git"
+        fi
+    fi
+}
 
 # Clear the screen
 clear
 
-# NVIDIA check and VM check
+# Stage 1: Initial Setup and Environment Check
+display_stage_prompt "Initial Setup and Environment Check"
+
 echo -e "$CNT - Checking for NVIDIA GPU..."
 if lspci | grep -i nvidia &>/dev/null; then
     ISNVIDIA=true
@@ -85,54 +106,13 @@ else
     ISVM=false
 fi
 
-# Ensure yay is installed
-if ! command -v yay &> /dev/null; then
-    echo -e "$CWR - Yay is not installed."
-    read -rp $'[\e[1;33mACTION\e[0m] - Would you like to install yay? (y/n) ' INSTYAY
-    if [[ $INSTYAY =~ [Yy] ]]; then
-        git clone https://aur.archlinux.org/yay.git &>> "$LOG_FILE"
-        cd yay && makepkg -si --noconfirm &>> ../"$LOG_FILE" && cd ..
-        echo -e "$COK - Yay installed."
-    else
-        echo -e "$CER - Yay is required for some packages. Exiting."
-        exit 1
-    fi
-fi
+check_env_var "DOTFILES_DIR" "$DEFAULT_DOTFILES_DIR"
+check_env_var "DOTFILES_REPO" "$DEFAULT_DOTFILES_REPO"
 
-# Function to install software using pacman
-install_pacman_package() {
-    if pacman -Qi $1 &>/dev/null; then
-        echo -e "$COK - $1 is already installed."
-    else
-        echo -e "$CNT - Installing $1 using pacman..."
-        sudo pacman -S --noconfirm $1 &>> "$LOG_FILE"
-        if pacman -Qi $1 &>/dev/null; then
-            echo -e "$COK - $1 was installed successfully."
-        else
-            echo -e "$CER - Failed to install $1. Check install.log."
-            exit 1
-        fi
-    fi
-}
-
-# Function to install software using yay
-install_yay_package() {
-    if yay -Qi $1 &>/dev/null; then
-        echo -e "$COK - $1 is already installed."
-    else
-        echo -e "$CNT - Installing $1 using yay..."
-        yay -S --noconfirm $1 &>> "$LOG_FILE"
-        if yay -Qi $1 &>/dev/null; then
-            echo -e "$COK - $1 was installed successfully."
-        else
-            echo -e "$CER - Failed to install $1. Check install.log."
-            exit 1
-        fi
-    fi
-}
-
-# NVIDIA setup (if not a VM and NVIDIA detected)
+# Stage 2: NVIDIA Setup (if applicable)
 if [[ "$ISNVIDIA" == true && "$ISVM" == false ]]; then
+    display_stage_prompt "NVIDIA Setup"
+
     echo -e "$CNT - Setting up NVIDIA using nvidia-all..."
 
     # Remove potentially conflicting NVIDIA packages
@@ -141,8 +121,8 @@ if [[ "$ISNVIDIA" == true && "$ISVM" == false ]]; then
 
     # Clone nvidia-all repository
     echo -e "$CNT - Cloning nvidia-all repository..."
-    git clone https://github.com/Frogging-Family/nvidia-all.git $HOME/nvidia-all &>> "$LOG_FILE"
-    cd nvidia-all || { echo -e "$CER - Failed to change to nvidia-all directory. Exiting."; exit 1; }
+    git clone https://github.com/Frogging-Family/nvidia-all.git $HOME/setup-repos/nvidia-all &>> "$LOG_FILE"
+    cd $HOME/setup-repos/nvidia-all || { echo -e "$CER - Failed to change to nvidia-all directory. Exiting."; exit 1; }
 
     # Install nvidia-all
     echo -e "$CNT - Installing nvidia-all..."
@@ -156,7 +136,7 @@ if [[ "$ISNVIDIA" == true && "$ISVM" == false ]]; then
         exit 1
     fi
 
-    cd ..
+    cd $HOME
 
     # Add NVIDIA modprobe configuration
     echo -e "$CNT - Adding NVIDIA modprobe configuration..."
@@ -185,6 +165,85 @@ else
     echo -e "$CNT - Skipping NVIDIA setup."
 fi
 
+# Stage 3: Package Installation (Pacman)
+display_stage_prompt "Package Installation (Pacman)"
+
+# Function to install software using pacman
+install_pacman_package() {
+    check_env_var "DOTFILES_DIR" "$DEFAULT_DOTFILES_DIR"
+    check_env_var "DOTFILES_REPO" "$DEFAULT_DOTFILES_REPO"
+    
+    if pacman -Qi $1 &>/dev/null; then
+        echo -e "$COK - $1 is already installed."
+    else
+        echo -e "$CNT - Installing $1 using pacman..."
+        sudo pacman -S --noconfirm $1 &>> "$LOG_FILE"
+        if pacman -Qi $1 &>/dev/null; then
+            echo -e "$COK - $1 was installed successfully."
+        else
+            echo -e "$CER - Failed to install $1. Check install.log."
+            exit 1
+        fi
+    fi
+}
+
+echo -e "$CNT - Installing packages using pacman..."
+for pkg in "${pacman_packages[@]}"; do
+    install_pacman_package $pkg
+done
+
+# Stage 4: AUR Helper Installation
+display_stage_prompt "AUR Helper Installation"
+
+# Ensure yay is installed
+if ! command -v yay &> /dev/null; then
+    echo -e "$CWR - Yay is not installed. Installing yay..."
+    git clone https://aur.archlinux.org/yay.git $HOME/setup-repos/yay &>> "$LOG_FILE"
+    cd $HOME/setup-repos/yay && makepkg -si --noconfirm &>> "$LOG_FILE"
+    cd $HOME
+    if command -v yay &> /dev/null; then
+        echo -e "$COK - Yay installed successfully."
+    else
+        echo -e "$CER - Failed to install yay. Exiting."
+        exit 1
+    fi
+else
+    echo -e "$COK - Yay is already installed."
+fi
+
+# Stage 5: AUR Package Installation
+display_stage_prompt "AUR Package Installation"
+
+# Function to install software using yay
+install_yay_package() {
+    check_env_var "DOTFILES_DIR" "$DEFAULT_DOTFILES_DIR"
+    check_env_var "DOTFILES_REPO" "$DEFAULT_DOTFILES_REPO"
+    
+    if yay -Qi $1 &>/dev/null; then
+        echo -e "$COK - $1 is already installed."
+    else
+        echo -e "$CNT - Installing $1 using yay..."
+        yay -S --noconfirm $1 &>> "$LOG_FILE"
+        if yay -Qi $1 &>/dev/null; then
+            echo -e "$COK - $1 was installed successfully."
+        else
+            echo -e "$CER - Failed to install $1. Check install.log."
+            exit 1
+        fi
+    fi
+}
+
+echo -e "$CNT - Installing packages using yay..."
+for pkg in "${yay_packages[@]}"; do
+    install_yay_package $pkg
+done
+
+# Stage 6: Dotfiles Setup
+display_stage_prompt "Dotfiles Setup"
+
+check_env_var "DOTFILES_DIR" "$DEFAULT_DOTFILES_DIR"
+check_env_var "DOTFILES_REPO" "$DEFAULT_DOTFILES_REPO"
+
 # Clone or update dotfiles
 echo -e "$CNT - Setting up dotfiles..."
 if [ -d "$DOTFILES_DIR" ]; then
@@ -202,16 +261,23 @@ else
     exit 1
 fi
 
-# Install required software
-echo -e "$CNT - Installing packages using pacman..."
-for pkg in "${pacman_packages[@]}"; do
-    install_pacman_package $pkg
-done
+cd $HOME
 
-echo -e "$CNT - Installing packages using yay..."
-for pkg in "${yay_packages[@]}"; do
-    install_yay_package $pkg
-done
+# Copy wallpaper directory
+echo -e "$CNT - Copying wallpaper directory..."
+if [ -d "$DOTFILES_DIR/wallpapers" ]; then
+    cp -r "$DOTFILES_DIR/wallpapers" "$HOME/.wallpapers"
+    if [ $? -eq 0 ]; then
+        echo -e "$COK - Wallpaper directory copied successfully."
+    else
+        echo -e "$CER - Failed to copy wallpaper directory."
+    fi
+else
+    echo -e "$CWR - Wallpaper directory not found. Skipping."
+fi
+
+# Stage 7: Configuration Files Setup
+display_stage_prompt "Configuration Files Setup"
 
 # Clearing old symlinks
 clear_symlinks() {
@@ -223,6 +289,7 @@ clear_symlinks() {
         echo -e "$CWR - Directory $dir not found. Skipping."
     fi
 }
+
 clear_symlinks "$HOME/.config/hypr"
 clear_symlinks "$HOME/.config/kitty"
 clear_symlinks "$HOME/.config/waybar"
@@ -237,13 +304,26 @@ done
 
 echo -e "$COK - Configuration files have been symlinked successfully."
 
-# Remove the Frogging Family nvidia-all repository
-echo -e "$CNT - Cleaning up: Removing nvidia-all repository..."
-rm -rf "$HOME/nvidia-all"
+cd $HOME
+
+# Stage 8: Final Cleanup and Reboot
+display_stage_prompt "Final Cleanup and Reboot"
+
+# Remove the setup-repos directory
+echo -e "$CNT - Cleaning up: Removing setup-repos directory..."
+rm -rf "$HOME/setup-repos"
 if [ $? -eq 0 ]; then
-    echo -e "$COK - nvidia-all repository removed successfully."
+    echo -e "$COK - setup-repos directory removed successfully."
 else
-    echo -e "$CWR - Failed to remove nvidia-all repository. You may want to remove it manually from $HOME/nvidia-all"
+    echo -e "$CWR - Failed to remove setup-repos directory. You may want to remove it manually from $HOME/setup-repos"
 fi
+
+# Prompt for reboot
+read -rp $'[\e[1;33mACTION\e[0m] - Do you want to reboot now? (y/n) ' reboot_choice
+case "$reboot_choice" in 
+    y|Y ) echo "Rebooting..."; sudo reboot;;
+    n|N ) echo "Reboot skipped. Please remember to reboot your system to apply all changes.";;
+    * ) echo "Invalid choice. Please reboot manually when convenient.";;
+esac
 
 echo -e "$COK - Setup completed successfully."
