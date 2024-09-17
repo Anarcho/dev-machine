@@ -9,6 +9,14 @@ CWR="[\e[1;35mWARNING\e[0m]"
 # Log file for installation
 LOG_FILE="$HOME/install.log"
 
+
+if [ ! -f "$HOME/reset_repo.sh" ]; then
+    echo "Copying reset_repo.sh to home directory..."
+    cp "$(dirname "$0")/reset_repo.sh" "$HOME/reset_repo.sh"
+    chmod +x "$HOME/reset_repo.sh"
+    echo "reset_repo.sh has been copied to your home directory."
+fi
+
 # Source configuration file
 source ./setup_config.conf
 
