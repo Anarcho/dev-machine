@@ -6,324 +6,230 @@ COK="[\e[1;32mOK\e[0m]"
 CER="[\e[1;31mERROR\e[0m]"
 CWR="[\e[1;35mWARNING\e[0m]"
 
-# Default paths and URLs (as a fallback)
-DEFAULT_DOTFILES_DIR="$HOME/.dotfiles"
-DEFAULT_DOTFILES_REPO="https://github.com/anarcho/dotfiles.git"
-
 # Log file for installation
 LOG_FILE="$HOME/install.log"
 
-# List of packages to install via pacman
-pacman_packages=("wlroots" "xorg-xwayland" "polkit-kde-agent" "mkinitcpio" "qt5-wayland" "qt6-wayland" "grim" "slurp" "waybar" "swaylock" "brightnessctl" "hyprpaper" "kitty" "papirus-icon-theme" "noto-fonts-emoji" "neovim" "stow")
+# Get the directory of the script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-# List of packages to install via yay (AUR packages)
-yay_packages=("hyprland")
+# Configuration file
+CONFIG_FILE="$SCRIPT_DIR/setup_config.conf"
 
-# List of configs to stow
-configs=("hypr" "kitty" "waybar")
+# Error handling function
+handle_error() {
+    local exit_code=$1
+    local error_message=$2
+    if [ $exit_code -ne 0 ]; then
+        echo -e "$CER $error_message" | tee -a "$LOG_FILE"
+        exit $exit_code
+    fi
+}
 
-# Function to prompt for stage
-display_stage_prompt() {
-    local stage_name="$1"
-    echo -e "\n$CNT Stage: $stage_name"
-    read -rp $'[\e[1;33mACTION\e[0m] - Do you want to proceed with this stage? (y/n) ' choice
+# Logging function
+log_message() {
+    local message=$1
+    echo -e "$message" | tee -a "$LOG_FILE"
+}
+
+# User confirmation function
+confirm_action() {
+    local message=$1
+    read -rp "$message (y/n) " choice
     case "$choice" in 
         y|Y ) return 0;;
-        n|N ) echo -e "$CWR Exiting script."; exit 1;;
-        * ) echo -e "$CER Invalid choice. Exiting script."; exit 1;;
+        n|N ) return 1;;
+        * ) echo -e "$CER Invalid choice."; return 1;;
     esac
 }
 
-# Function to check and fix environment variables
-check_env_var() {
-    local var_name=$1
-    local fallback_value=$2
-    local var_value=${!var_name}
-
-    if [ -z "$var_value" ]; then
-        echo -e "$CWR - $var_name is not set. Attempting to set it to default value."
-        export "$var_name"="$fallback_value"
-        echo "export $var_name=\"$fallback_value\"" >> ~/.bashrc
-        echo -e "$COK - $var_name set to $fallback_value."
+# Backup function
+create_backup() {
+    local dir_to_backup=$1
+    local backup_name="$dir_to_backup.bak.$(date +%Y%m%d%H%M%S)"
+    if [ -d "$dir_to_backup" ]; then
+        cp -r "$dir_to_backup" "$backup_name"
+        log_message "$COK Backup created: $backup_name"
     else
-        echo -e "$CNT - $var_name is set to $var_value. Verifying..."
-        if [[ "$var_name" == "DOTFILES_DIR" ]]; then
-            if [ -d "$var_value" ]; then
-                echo -e "$COK - $var_name path is valid."
-            else
-                echo -e "$CWR - $var_name directory does not exist. Creating it."
-                mkdir -p "$var_value"
-                if [ $? -eq 0 ]; then
-                    echo -e "$COK - $var_name directory created."
-                else
-                    echo -e "$CER - Failed to create $var_name directory. Falling back to default."
-                    export "$var_name"="$fallback_value"
-                fi
-            fi
-        elif [[ "$var_name" == "DOTFILES_REPO" ]]; then
-            if curl --output /dev/null --silent --head --fail "$var_value"; then
-                echo -e "$COK - $var_name URL is reachable."
-            else
-                echo -e "$CER - $var_name URL is not reachable. Falling back to default."
-                export "$var_name"="$fallback_value"
-            fi
-        fi
-    fi
-
-    # Final check and fallback
-    var_value=${!var_name}
-    if [ -z "$var_value" ]; then
-        echo -e "$CER - Failed to set $var_name. Using hardcoded value."
-        if [[ "$var_name" == "DOTFILES_DIR" ]]; then
-            export "$var_name"="$HOME/.dotfiles"
-        elif [[ "$var_name" == "DOTFILES_REPO" ]]; then
-            export "$var_name"="https://github.com/anarcho/dotfiles.git"
-        fi
+        log_message "$CWR Directory $dir_to_backup does not exist. Skipping backup."
     fi
 }
 
-# Clear the screen
-clear
+# Check and install dependencies
+check_dependencies() {
+    local deps=("git" "stow" "curl")
+    for dep in "${deps[@]}"; do
+        if ! command -v $dep &> /dev/null; then
+            log_message "$CWR $dep is not installed. Installing..."
+            sudo pacman -S --noconfirm $dep
+            handle_error $? "Failed to install $dep"
+        fi
+    done
+    log_message "$COK All dependencies are installed."
+}
 
-# Stage 1: Initial Setup and Environment Check
-display_stage_prompt "Initial Setup and Environment Check"
+# Source configuration file
+source_config() {
+    if [ -f "$CONFIG_FILE" ]; then
+        source "$CONFIG_FILE"
+        log_message "$COK Configuration file sourced from $CONFIG_FILE"
+    else
+        log_message "$CER Configuration file not found at $CONFIG_FILE. Exiting."
+        exit 1
+    fi
+}
 
-echo -e "$CNT - Checking for NVIDIA GPU..."
-if lspci | grep -i nvidia &>/dev/null; then
-    ISNVIDIA=true
-    echo -e "$CNT - NVIDIA GPU detected."
-else
-    ISNVIDIA=false
-    echo -e "$CNT - NVIDIA GPU not detected."
-fi
-
-echo -e "$CNT - Checking if system is a VM..."
-ISVM=$(systemd-detect-virt)
-if [[ $ISVM != "none" ]]; then
-    echo -e "$CWR - Running in a VM."
-    ISVM=true
-else
-    ISVM=false
-fi
-
-check_env_var "DOTFILES_DIR" "$DEFAULT_DOTFILES_DIR"
-check_env_var "DOTFILES_REPO" "$DEFAULT_DOTFILES_REPO"
-
-# Stage 2: NVIDIA Setup (if applicable)
-if [[ "$ISNVIDIA" == true && "$ISVM" == false ]]; then
-    display_stage_prompt "NVIDIA Setup"
-
-    echo -e "$CNT - Setting up NVIDIA using nvidia-all..."
-
-    # Remove potentially conflicting NVIDIA packages
-    echo -e "$CNT - Removing potentially conflicting NVIDIA packages..."
-    yes | sudo pacman -Rdd nvidia nvidia-utils nvidia-settings 2>/dev/null
-
+# Nvidia Driver Install function
+nvidia_install() {
+    log_message "$CNT Starting Nvidia Driver Installation..."
+    
     # Clone nvidia-all repository
-    echo -e "$CNT - Cloning nvidia-all repository..."
-    git clone https://github.com/Frogging-Family/nvidia-all.git $HOME/setup-repos/nvidia-all &>> "$LOG_FILE"
-    cd $HOME/setup-repos/nvidia-all || { echo -e "$CER - Failed to change to nvidia-all directory. Exiting."; exit 1; }
-
+    git clone https://github.com/Frogging-Family/nvidia-all.git $HOME/setup-repos/nvidia-all
+    handle_error $? "Failed to clone nvidia-all repository"
+    
     # Install nvidia-all
-    echo -e "$CNT - Installing nvidia-all..."
-    echo -e "$CWR - You will now see prompts from the nvidia-all installer. Please respond to them as needed."
-    makepkg -si
-
-    if [ $? -eq 0 ]; then
-        echo -e "$COK - nvidia-all installed successfully."
-    else
-        echo -e "$CER - Failed to install nvidia-all. Please check the output above for any errors."
-        exit 1
-    fi
-
-    cd $HOME
-
-    # Add NVIDIA modprobe configuration
-    echo -e "$CNT - Adding NVIDIA modprobe configuration..."
-    echo "options nvidia_drm modeset=1 fbdev=1" | sudo tee /etc/modprobe.d/nvidia.conf > /dev/null
-    if [ $? -eq 0 ]; then
-        echo -e "$COK - NVIDIA modprobe configuration added successfully."
-    else
-        echo -e "$CER - Failed to add NVIDIA modprobe configuration."
-    fi
-
-    # Set environment variables for NVIDIA and Wayland
-    echo -e "$CNT - Setting NVIDIA and Wayland environment variables..."
-    sudo tee -a /etc/environment << EOF
-LIBVA_DRIVER_NAME=nvidia
-XDG_SESSION_TYPE=wayland
-GBM_BACKEND=nvidia-drm
-__GLX_VENDOR_LIBRARY_NAME=nvidia
-WLR_RENDERER=vulkan
-EOF
-    if [ $? -eq 0 ]; then
-        echo -e "$COK - Environment variables set successfully."
-    else
-        echo -e "$CER - Failed to set environment variables."
-    fi
-else
-    echo -e "$CNT - Skipping NVIDIA setup."
-fi
-
-# Stage 3: Package Installation (Pacman)
-display_stage_prompt "Package Installation (Pacman)"
-
-# Function to install software using pacman
-install_pacman_package() {
-    check_env_var "DOTFILES_DIR" "$DEFAULT_DOTFILES_DIR"
-    check_env_var "DOTFILES_REPO" "$DEFAULT_DOTFILES_REPO"
+    cd $HOME/setup-repos/nvidia-all
+    makepkg -si --noconfirm
+    handle_error $? "Failed to install nvidia-all"
     
-    if pacman -Qi $1 &>/dev/null; then
-        echo -e "$COK - $1 is already installed."
-    else
-        echo -e "$CNT - Installing $1 using pacman..."
-        sudo pacman -S --noconfirm $1 &>> "$LOG_FILE"
-        if pacman -Qi $1 &>/dev/null; then
-            echo -e "$COK - $1 was installed successfully."
-        else
-            echo -e "$CER - Failed to install $1. Check install.log."
-            exit 1
-        fi
-    fi
+    # Remove cloned repository
+    cd $HOME
+    rm -rf $HOME/setup-repos/nvidia-all
+    
+    log_message "$COK Nvidia Driver Installation completed."
 }
 
-echo -e "$CNT - Installing packages using pacman..."
-for pkg in "${pacman_packages[@]}"; do
-    install_pacman_package $pkg
-done
-
-# Stage 4: AUR Helper Installation
-display_stage_prompt "AUR Helper Installation"
-
-# Ensure yay is installed
-if ! command -v yay &> /dev/null; then
-    echo -e "$CWR - Yay is not installed. Installing yay..."
-    git clone https://aur.archlinux.org/yay.git $HOME/setup-repos/yay &>> "$LOG_FILE"
-    cd $HOME/setup-repos/yay && makepkg -si --noconfirm &>> "$LOG_FILE"
-    cd $HOME
-    if command -v yay &> /dev/null; then
-        echo -e "$COK - Yay installed successfully."
-    else
-        echo -e "$CER - Failed to install yay. Exiting."
-        exit 1
-    fi
-else
-    echo -e "$COK - Yay is already installed."
-fi
-
-# Stage 5: AUR Package Installation
-display_stage_prompt "AUR Package Installation"
-
-# Function to install software using yay
-install_yay_package() {
-    check_env_var "DOTFILES_DIR" "$DEFAULT_DOTFILES_DIR"
-    check_env_var "DOTFILES_REPO" "$DEFAULT_DOTFILES_REPO"
+# Package Install function
+package_install() {
+    log_message "$CNT Starting Package Installation..."
     
-    if yay -Qi $1 &>/dev/null; then
-        echo -e "$COK - $1 is already installed."
-    else
-        echo -e "$CNT - Installing $1 using yay..."
-        yay -S --noconfirm $1 &>> "$LOG_FILE"
-        if yay -Qi $1 &>/dev/null; then
-            echo -e "$COK - $1 was installed successfully."
-        else
-            echo -e "$CER - Failed to install $1. Check install.log."
-            exit 1
-        fi
+    # Check and install yay if not present
+    if ! command -v yay &> /dev/null; then
+        log_message "$CWR yay is not installed. Installing..."
+        git clone https://aur.archlinux.org/yay.git $HOME/setup-repos/yay
+        cd $HOME/setup-repos/yay
+        makepkg -si --noconfirm
+        handle_error $? "Failed to install yay"
+        cd $HOME
+        rm -rf $HOME/setup-repos/yay
     fi
+    
+    # Install pacman packages
+    for pkg in "${PACMAN_PACKAGES[@]}"; do
+        sudo pacman -S --noconfirm $pkg
+        handle_error $? "Failed to install $pkg"
+    done
+    
+    # Install yay packages
+    for pkg in "${YAY_PACKAGES[@]}"; do
+        yay -S --noconfirm $pkg
+        handle_error $? "Failed to install $pkg"
+    done
+    
+    log_message "$COK Package Installation completed."
 }
 
-echo -e "$CNT - Installing packages using yay..."
-for pkg in "${yay_packages[@]}"; do
-    install_yay_package $pkg
-done
+# Dotfiles Setup function
+dotfiles_setup() {
+    log_message "$CNT Starting Dotfiles Setup..."
+    
+    if [ -d "$DOTFILES_DIR" ]; then
+        cd "$DOTFILES_DIR"
+        git fetch
+        LOCAL=$(git rev-parse @)
+        REMOTE=$(git rev-parse @{u})
+        
+        if [ $LOCAL != $REMOTE ]; then
+            log_message "$CNT Updates available. Pulling changes..."
+            git pull
+            handle_error $? "Failed to pull dotfiles updates"
+        else
+            log_message "$COK Dotfiles are up to date."
+        fi
+    else
+        log_message "$CNT Cloning dotfiles repository..."
+        git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
+        handle_error $? "Failed to clone dotfiles repository"
+    fi
+    
+    # Clear existing symlinks
+    for config in "${CONFIGS[@]}"; do
+        find "$HOME/.config/$config" -type l -delete
+    done
+    
+    # Stow dotfiles
+    cd "$DOTFILES_DIR"
+    for config in "${CONFIGS[@]}"; do
+        stow -R "$config"
+        handle_error $? "Failed to stow $config"
+    done
+    
+    log_message "$COK Dotfiles Setup completed."
+}
 
-# Stage 6: Dotfiles Setup
-display_stage_prompt "Dotfiles Setup"
-
-check_env_var "DOTFILES_DIR" "$DEFAULT_DOTFILES_DIR"
-check_env_var "DOTFILES_REPO" "$DEFAULT_DOTFILES_REPO"
-
-# Clone or update dotfiles
-echo -e "$CNT - Setting up dotfiles..."
-if [ -d "$DOTFILES_DIR" ]; then
-    echo -e "$CNT - Dotfiles directory exists. Pulling updates..."
-    cd "$DOTFILES_DIR" && git pull
-else
-    echo -e "$CNT - Cloning dotfiles repository..."
+# Fix Setup function
+fix_setup() {
+    log_message "$CNT Starting Fix Setup..."
+    
+    # Reinstall yay
+    log_message "$CNT Reinstalling yay..."
+    rm -rf $HOME/setup-repos/yay
+    git clone https://aur.archlinux.org/yay.git $HOME/setup-repos/yay
+    cd $HOME/setup-repos/yay
+    makepkg -si --noconfirm
+    handle_error $? "Failed to reinstall yay"
+    cd $HOME
+    rm -rf $HOME/setup-repos/yay
+    
+    # Backup and remove existing dotfiles
+    create_backup "$DOTFILES_DIR"
+    rm -rf "$DOTFILES_DIR"
+    
+    # Clear symlinks
+    for config in "${CONFIGS[@]}"; do
+        find "$HOME/.config/$config" -type l -delete
+    done
+    
+    # Clone dotfiles repository
     git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
-fi
-
-if [ $? -eq 0 ]; then
-    echo -e "$COK - Dotfiles setup successful."
-else
-    echo -e "$CER - Failed to setup dotfiles. Exiting."
-    exit 1
-fi
-
-cd $HOME
-
-# Copy wallpaper directory
-echo -e "$CNT - Copying wallpaper directory..."
-if [ -d "$DOTFILES_DIR/wallpapers" ]; then
-    cp -r "$DOTFILES_DIR/wallpapers" "$HOME/.wallpapers"
-    if [ $? -eq 0 ]; then
-        echo -e "$COK - Wallpaper directory copied successfully."
-    else
-        echo -e "$CER - Failed to copy wallpaper directory."
-    fi
-else
-    echo -e "$CWR - Wallpaper directory not found. Skipping."
-fi
-
-# Stage 7: Configuration Files Setup
-display_stage_prompt "Configuration Files Setup"
-
-# Clearing old symlinks
-clear_symlinks() {
-    local dir=$1
-    if [ -d "$dir" ]; then
-        echo -e "$CNT - Clearing symlinks in $dir..."
-        find "$dir" -maxdepth 1 -type l -delete
-    else
-        echo -e "$CWR - Directory $dir not found. Skipping."
-    fi
+    handle_error $? "Failed to clone dotfiles repository"
+    
+    # Redo symlinks
+    cd "$DOTFILES_DIR"
+    for config in "${CONFIGS[@]}"; do
+        stow -R "$config"
+        handle_error $? "Failed to stow $config"
+    done
+    
+    log_message "$COK Fix Setup completed."
 }
 
-clear_symlinks "$HOME/.config/hypr"
-clear_symlinks "$HOME/.config/kitty"
-clear_symlinks "$HOME/.config/waybar"
+# Main menu function
+main_menu() {
+    echo -e "\nPlease select a stage to run:"
+    echo "1. All (Nvidia + Packages + Dotfiles)"
+    echo "2. Nvidia Driver Install"
+    echo "3. Package Installs"
+    echo "4. Dotfiles Setup"
+    echo "5. Fix Setup"
+    echo "6. Exit"
+    
+    read -rp "Enter your choice [1-6]: " choice
+    
+    case $choice in
+        1) nvidia_install && package_install && dotfiles_setup ;;
+        2) nvidia_install ;;
+        3) package_install ;;
+        4) dotfiles_setup ;;
+        5) fix_setup ;;
+        6) exit 0 ;;
+        *) echo -e "$CER Invalid choice. Please try again."; main_menu ;;
+    esac
+}
 
-# Use stow to symlink the dotfiles
-echo -e "$CNT - Using stow to symlink dotfiles..."
-cd "$DOTFILES_DIR" || { echo -e "$CER - Failed to change to $DOTFILES_DIR. Exiting."; exit 1; }
-
-for config in "${configs[@]}"; do
-    stow -R "$config" && echo -e "$COK - Successfully stowed $config." || echo -e "$CER - Failed to stow $config."
-done
-
-echo -e "$COK - Configuration files have been symlinked successfully."
-
-cd $HOME
-
-# Stage 8: Final Cleanup and Reboot
-display_stage_prompt "Final Cleanup and Reboot"
-
-# Remove the setup-repos directory
-echo -e "$CNT - Cleaning up: Removing setup-repos directory..."
-rm -rf "$HOME/setup-repos"
-if [ $? -eq 0 ]; then
-    echo -e "$COK - setup-repos directory removed successfully."
-else
-    echo -e "$CWR - Failed to remove setup-repos directory. You may want to remove it manually from $HOME/setup-repos"
-fi
-
-# Prompt for reboot
-read -rp $'[\e[1;33mACTION\e[0m] - Do you want to reboot now? (y/n) ' reboot_choice
-case "$reboot_choice" in 
-    y|Y ) echo "Rebooting..."; sudo reboot;;
-    n|N ) echo "Reboot skipped. Please remember to reboot your system to apply all changes.";;
-    * ) echo "Invalid choice. Please reboot manually when convenient.";;
-esac
-
-echo -e "$COK - Setup completed successfully."
+# Main execution
+clear
+log_message "$CNT Starting setup script..."
+check_dependencies
+source_config
+main_menu
+log_message "$COK Setup script completed successfully."
