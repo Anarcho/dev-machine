@@ -194,20 +194,31 @@ setup_dotfiles() {
         find "$HOME/.config/$config" -maxdepth 1 -type l -delete
     done
 
-    # Clone nvim config repo and stow it
-    echo -e "$CNT - Cloning nvim config repository..."
+    # Handle Neovim configuration
+    if [ -d "$HOME/.dotfiles/nvim" ]; then
+        read -rp $'[\e[1;33mACTION\e[0m] - Do you want to keep your existing Neovim configuration? (y/n) ' keep_nvim_config
+        case "$keep_nvim_config" in 
+            y|Y )
+                echo -e "$CNT - Backing up existing Neovim configuration..."
+                mv "$HOME/.dotfiles/nvim" "$HOME/.dotfiles/nvim_backup_$(date +%Y%m%d%H%M%S)"
+                echo -e "$COK - Existing Neovim configuration backed up."
+                ;;
+            n|N )
+                echo -e "$CNT - Removing existing Neovim configuration..."
+                rm -rf "$HOME/.dotfiles/nvim"
+                ;;
+            * )
+                echo -e "$CER - Invalid choice. Keeping existing Neovim configuration."
+                ;;
+        esac
+    fi
+
+    echo -e "$CNT - Cloning Neovim config repository..."
     git clone https://github.com/Anarcho/kickstart.nvim.git "$HOME/.dotfiles/nvim"
     if [ $? -eq 0 ]; then
-        echo -e "$COK - nvim config repository cloned successfully."
-        echo -e "$CNT - Stowing nvim config..."
-        stow -R nvim
-        if [ $? -eq 0 ]; then
-            echo -e "$COK - nvim config stowed successfully."
-        else
-            echo -e "$CER - Failed to stow nvim config."
-        fi
+        echo -e "$COK - Neovim config repository cloned successfully."
     else
-        echo -e "$CER - Failed to clone nvim config repository."
+        echo -e "$CER - Failed to clone Neovim config repository."
     fi
 
     # Use stow to symlink the dotfiles
@@ -215,8 +226,6 @@ setup_dotfiles() {
     for config in "${CONFIGS[@]}"; do
         stow -R "$config" && echo -e "$COK - Successfully stowed $config." || echo -e "$CER - Failed to stow $config."
     done
-
-    stow -R 
 
     echo -e "$COK - Configuration files have been symlinked successfully."
     cd $HOME
