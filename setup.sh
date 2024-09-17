@@ -353,7 +353,7 @@ main_menu() {
         2) base_install ;;
         3) install_additional_packages ;;
         4) setup_dotfiles ;;
-        5) run_additional_scripts ;;
+        5) run_scripts ;;
         6) reset_and_reinstall_configs ;;
         7) fix_setup ;;
         8) exit 0 ;;
