@@ -170,11 +170,12 @@ setup_dotfiles() {
 }
 
 run_scripts() {
-    local scripts_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/scripts"
-    echo -e "$CNT - Running scripts from $scripts_dir"
+    local repo_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+    local scripts_dir="$repo_dir/scripts"
+    echo -e "$CNT - Running additional scripts from $scripts_dir"
 
     if [ ! -d "$scripts_dir" ]; then
-        echo -e "$CWR - Scripts directory not found. Skipping scripts."
+        echo -e "$CWR - Scripts directory not found. Skipping additional scripts."
         return
     fi
 
@@ -196,9 +197,8 @@ run_scripts() {
         fi
     done
 
-    echo -e "$COK - Finished running scripts."
+    echo -e "$COK - Finished running additional scripts."
 }
-
 fix_setup() {
     echo -e "$CNT - Starting Fix Setup..."
     
