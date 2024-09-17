@@ -17,11 +17,6 @@ read_colors() {
         echo -e "$CER - Color file not found at $COLOR_FILE"
         exit 1
     fi
-
-    declare -gA COLORS
-    while IFS=': ' read -r key value; do
-        COLORS[$key]=$value
-    done < "$COLOR_FILE"
 }
 
 # Function to update Waybar colors
@@ -38,8 +33,14 @@ update_waybar_colors() {
     
     # Read the Waybar style file and replace color variables
     while IFS= read -r line; do
-        for key in "${!COLORS[@]}"; do
-            line=${line//\$\{$key\}/${COLORS[$key]}}
+        while [[ $line =~ \$\{([a-zA-Z_][a-zA-Z0-9_]*)\} ]]; do
+            key="${BASH_REMATCH[1]}"
+            value=$(grep "^$key:" "$COLOR_FILE" | cut -d ':' -f2- | tr -d ' ')
+            if [ -n "$value" ]; then
+                line=${line//$\{$key\}/$value}
+            else
+                echo -e "$CWR - Color $key not found in $COLOR_FILE"
+            fi
         done
         echo "$line" >> "$TEMP_FILE"
     done < "$WAYBAR_STYLE_FILE"
