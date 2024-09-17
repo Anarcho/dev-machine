@@ -8,7 +8,7 @@ CWR="[\e[1;35mWARNING\e[0m]"
 
 # Your repo URL
 REPO_URL="https://github.com/anarcho/dev-machine.git"
-REPO_DIR="$HOME/your-repo-name"
+REPO_DIR="$HOME/dev-machine"
 
 echo -e "$CNT Resetting repository..."
 
