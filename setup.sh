@@ -169,6 +169,36 @@ setup_dotfiles() {
     cd $HOME
 }
 
+run_scripts() {
+    local scripts_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/scripts"
+    echo -e "$CNT - Running scripts from $scripts_dir"
+
+    if [ ! -d "$scripts_dir" ]; then
+        echo -e "$CWR - Scripts directory not found. Skipping scripts."
+        return
+    fi
+
+    for script in "$scripts_dir"/*; do
+        if [ -f "$script" ]; then
+            echo -e "$CNT - Processing script: $(basename "$script")"
+            chmod +x "$script"
+            if [ $? -eq 0 ]; then
+                echo -e "$COK - Made $(basename "$script") executable."
+                bash "$script"
+                if [ $? -eq 0 ]; then
+                    echo -e "$COK - Successfully ran $(basename "$script")"
+                else
+                    echo -e "$CER - Failed to run $(basename "$script")"
+                fi
+            else
+                echo -e "$CER - Failed to make $(basename "$script") executable. Skipping."
+            fi
+        fi
+    done
+
+    echo -e "$COK - Finished running scripts."
+}
+
 fix_setup() {
     echo -e "$CNT - Starting Fix Setup..."
     
@@ -198,18 +228,20 @@ main_menu() {
     echo "2. Base Install (Nvidia + Core Packages)"
     echo "3. Additional Packages Install"
     echo "4. Dotfiles Setup"
-    echo "5. Fix Setup"
-    echo "6. Exit"
+    echo "5. Run Scripts"
+    echo "6. Fix Setup"
+    echo "7. Exit"
     
-    read -rp "Enter your choice [1-6]: " choice
+    read -rp "Enter your choice [1-7]: " choice
     
     case $choice in
-        1) base_install && install_additional_packages && setup_dotfiles ;;
+        1) base_install && install_additional_packages && setup_dotfiles && run_scripts ;;
         2) base_install ;;
         3) install_additional_packages ;;
         4) setup_dotfiles ;;
-        5) fix_setup ;;
-        6) exit 0 ;;
+        5) run_scripts ;;
+        6) fix_setup ;;
+        7) exit 0 ;;
         *) echo -e "$CER Invalid choice. Please try again."; main_menu ;;
     esac
 
