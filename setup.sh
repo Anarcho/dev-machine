@@ -194,10 +194,10 @@ setup_dotfiles() {
         find "$HOME/.config/$config" -maxdepth 1 -type l -delete
     done
 
-    # Handle Neovim configuration
-    echo -e "$CNT - Setting up Neovim configuration..."
+    # Handle Neovim configuration (LazyVim)
+    echo -e "$CNT - Setting up Neovim configuration with LazyVim..."
     if [ -d "$HOME/.config/nvim" ]; then
-        read -rp $'[\e[1;33mACTION\e[0m] - Existing Neovim configuration found. Do you want to replace it? (y/n) ' replace_nvim_config
+        read -rp $'[\e[1;33mACTION\e[0m] - Existing Neovim configuration found. Do you want to replace it with LazyVim? (y/n) ' replace_nvim_config
         case "$replace_nvim_config" in 
             y|Y )
                 echo -e "$CNT - Backing up existing Neovim configuration..."
@@ -214,21 +214,21 @@ setup_dotfiles() {
     fi
 
     if [ ! -d "$HOME/.config/nvim" ]; then
-        echo -e "$CNT - Cloning kickstart.nvim config repository..."
-        git clone https://github.com/Anarcho/kickstart.nvim.git "$HOME/.config/nvim"
+        # Clone LazyVim starter
+        echo -e "$CNT - Cloning LazyVim starter..."
+        git clone https://github.com/LazyVim/starter "$HOME/.config/nvim"
         if [ $? -eq 0 ]; then
-            echo -e "$COK - kickstart.nvim config repository cloned successfully."
+            echo -e "$COK - LazyVim starter cloned successfully."
+            # Remove the .git folder to detach from the starter repository
+            rm -rf "$HOME/.config/nvim/.git"
+            echo -e "$COK - Removed .git folder from LazyVim configuration."
             # Ensure the configuration is owned by the user
             chown -R $USER:$USER "$HOME/.config/nvim"
-            
-            # Initial setup for kickstart.nvim
-            echo -e "$CNT - Running initial setup for kickstart.nvim..."
-            nvim --headless -c 'quitall'
         else
-            echo -e "$CER - Failed to clone kickstart.nvim config repository."
+            echo -e "$CER - Failed to clone LazyVim starter."
         fi
 
-        echo -e "$COK - Neovim configuration setup completed."
+        echo -e "$COK - Neovim configuration with LazyVim setup completed."
     fi
 
     # Use stow to symlink the dotfiles
