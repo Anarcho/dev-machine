@@ -194,11 +194,29 @@ setup_dotfiles() {
         find "$HOME/.config/$config" -maxdepth 1 -type l -delete
     done
 
+    # Clone nvim config repo and stow it
+    echo -e "$CNT - Cloning nvim config repository..."
+    git clone https://github.com/Anarcho/kickstart.nvim.git "$HOME/.config/nvim"
+    if [ $? -eq 0 ]; then
+        echo -e "$COK - nvim config repository cloned successfully."
+        echo -e "$CNT - Stowing nvim config..."
+        stow -R nvim
+        if [ $? -eq 0 ]; then
+            echo -e "$COK - nvim config stowed successfully."
+        else
+            echo -e "$CER - Failed to stow nvim config."
+        fi
+    else
+        echo -e "$CER - Failed to clone nvim config repository."
+    fi
+
     # Use stow to symlink the dotfiles
     cd "$DOTFILES_DIR"
     for config in "${CONFIGS[@]}"; do
         stow -R "$config" && echo -e "$COK - Successfully stowed $config." || echo -e "$CER - Failed to stow $config."
     done
+
+    stow -R 
 
     echo -e "$COK - Configuration files have been symlinked successfully."
     cd $HOME
