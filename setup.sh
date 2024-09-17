@@ -190,22 +190,22 @@ setup_dotfiles() {
     fi
 
     # Clearing old symlinks
-for config in "${CONFIGS[@]}"; do
+    for config in "${CONFIGS[@]}"; do
         find "$HOME/.config/$config" -maxdepth 1 -type l -delete
     done
 
     # Handle Neovim configuration
-    if [ -d "$HOME/.dotfiles/nvim" ]; then
-        read -rp $'[\e[1;33mACTION\e[0m] - Do you want to keep your existing Neovim configuration? (y/n) ' keep_nvim_config
-        case "$keep_nvim_config" in 
+    echo -e "$CNT - Setting up Neovim configuration..."
+    if [ -d "$HOME/.config/nvim" ]; then
+        read -rp $'[\e[1;33mACTION\e[0m] - Existing Neovim configuration found. Do you want to replace it? (y/n) ' replace_nvim_config
+        case "$replace_nvim_config" in 
             y|Y )
                 echo -e "$CNT - Backing up existing Neovim configuration..."
-                mv "$HOME/.dotfiles/nvim" "$HOME/.dotfiles/nvim_backup_$(date +%Y%m%d%H%M%S)"
+                mv "$HOME/.config/nvim" "$HOME/.config/nvim_backup_$(date +%Y%m%d%H%M%S)"
                 echo -e "$COK - Existing Neovim configuration backed up."
                 ;;
             n|N )
-                echo -e "$CNT - Removing existing Neovim configuration..."
-                rm -rf "$HOME/.dotfiles/nvim"
+                echo -e "$CNT - Keeping existing Neovim configuration."
                 ;;
             * )
                 echo -e "$CER - Invalid choice. Keeping existing Neovim configuration."
@@ -213,27 +213,31 @@ for config in "${CONFIGS[@]}"; do
         esac
     fi
 
-    echo -e "$CNT - Cloning Neovim config repository..."
-    git clone https://github.com/Anarcho/kickstart.nvim.git "$HOME/.dotfiles/nvim"
-    if [ $? -eq 0 ]; then
-        echo -e "$COK - Neovim config repository cloned successfully."
-    else
-        echo -e "$CER - Failed to clone Neovim config repository."
+    if [ ! -d "$HOME/.config/nvim" ]; then
+        echo -e "$CNT - Cloning kickstart.nvim config repository..."
+        git clone https://github.com/Anarcho/kickstart.nvim.git "$HOME/.config/nvim"
+        if [ $? -eq 0 ]; then
+            echo -e "$COK - kickstart.nvim config repository cloned successfully."
+            # Ensure the configuration is owned by the user
+            chown -R $USER:$USER "$HOME/.config/nvim"
+            
+            # Initial setup for kickstart.nvim
+            echo -e "$CNT - Running initial setup for kickstart.nvim..."
+            nvim --headless -c 'quitall'
+        else
+            echo -e "$CER - Failed to clone kickstart.nvim config repository."
+        fi
+
+        echo -e "$COK - Neovim configuration setup completed."
     fi
 
     # Use stow to symlink the dotfiles
     cd "$DOTFILES_DIR"
     for config in "${CONFIGS[@]}"; do
-        stow -R "$config" && echo -e "$COK - Successfully stowed $config." || echo -e "$CER - Failed to stow $config."
+        if [ "$config" != "nvim" ]; then  # Skip nvim as it's handled separately
+            stow -R "$config" && echo -e "$COK - Successfully stowed $config." || echo -e "$CER - Failed to stow $config."
+        fi
     done
-
-    # Explicitly stow Neovim configuration
-    if [ -d "$HOME/.dotfiles/nvim" ]; then
-        echo -e "$CNT - Stowing Neovim configuration..."
-        stow -R nvim && echo -e "$COK - Successfully stowed Neovim configuration." || echo -e "$CER - Failed to stow Neovim configuration."
-    else
-        echo -e "$CER - Neovim configuration directory not found. Skipping Neovim stow."
-    fi
 
     echo -e "$COK - All configuration files have been symlinked successfully."
     cd $HOME
