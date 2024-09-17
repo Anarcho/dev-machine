@@ -190,7 +190,7 @@ setup_dotfiles() {
     fi
 
     # Clearing old symlinks
-    for config in "${CONFIGS[@]}"; do
+for config in "${CONFIGS[@]}"; do
         find "$HOME/.config/$config" -maxdepth 1 -type l -delete
     done
 
@@ -227,7 +227,15 @@ setup_dotfiles() {
         stow -R "$config" && echo -e "$COK - Successfully stowed $config." || echo -e "$CER - Failed to stow $config."
     done
 
-    echo -e "$COK - Configuration files have been symlinked successfully."
+    # Explicitly stow Neovim configuration
+    if [ -d "$HOME/.dotfiles/nvim" ]; then
+        echo -e "$CNT - Stowing Neovim configuration..."
+        stow -R nvim && echo -e "$COK - Successfully stowed Neovim configuration." || echo -e "$CER - Failed to stow Neovim configuration."
+    else
+        echo -e "$CER - Neovim configuration directory not found. Skipping Neovim stow."
+    fi
+
+    echo -e "$COK - All configuration files have been symlinked successfully."
     cd $HOME
 }
 
